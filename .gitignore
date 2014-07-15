@@ -26,3 +26,7 @@ proguard/
 __pycache__
 *.pyc
 local_settings.py
+
+#django
+savweb/static/
+savweb/media/
