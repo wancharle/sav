@@ -4,31 +4,58 @@
     <meta charset="utf-8">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
-    <!--<!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->-->
-    <!--<!-- <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" /> -->-->
+    <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+    <!-- <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" /> -->
     <meta name="viewport" content="user-scalable=no, width=320">
     <link rel="stylesheet" href="jquery/jquery.mobile-1.4.3.min.css">
     <script src="jquery/jquery-2.1.1.js"></script>
     <script src="jquery/jquery.mobile-1.4.3.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="css/index.css">
     <title>SAV - Sistema de Acompanhamentos de Visitas</title>
   </head>
   <body>
-    <div data-role="page" data-theme="b">
+    <div id="pglogin" data-role="page" data-theme="b">
       <div data-role="header">
         <h1>SAV</h1>
       </div>
       <div role="main" class="ui-content">
-        <p>Page content goes here.</p>
+        <h3>SAV - Sistema de Acompanhamento de Visitas</h3>
+        <form id="loginForm">
+          <div data-role="fieldcontain" class="ui-hide-label">
+            <label for="username">Usuário:</label>
+            <input type="text" name="username" id="username" value="" placeholder="Usuário">
+          </div>
+          <div data-role="fieldcontain" class="ui-hide-label">
+            <label for="password">Senha:</label>
+            <input type="password" name="password" id="password" value="" placeholder="Senha">
+          </div>
+          <input type="submit" value="Entrar" id="submitButton">
+        </form>
       </div>
       <div data-role="footer" data-position="fixed">
-        <h4> </h4>
+        <h4>&copy WSQ Informática</h4>
+      </div>
+    </div>
+    <div id="pglogado" data-role="page" data-theme="b">
+      <div data-role="header">
+        <h1>SAV</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <ul data-role="listview" data-inset="true" data-divider-theme="b">
+          <li data-role="list-divider">Atividade</li>
+          <li><a href="#">Iniciar Expediente</a></li>
+        </ul><br>
+        <ul data-role="listview" data-inset="true" data-divider-theme="b">
+          <li data-role="list-divider">Opções</li>
+          <li><a href="#">Atividades Recentes</a></li>
+          <li><a href="javascript:app.trocarUsuario();">Trocar de Usuario</a></li>
+        </ul>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h4>&copy WSQ Informática</h4>
       </div>
     </div>
     <script type="text/javascript" src="cordova.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
-    <script type="text/javascript">
-      <app>= new App();</app>
-    </script>
+    <script type="text/javascript">var app = new App();</script>
   </body>
 </html>

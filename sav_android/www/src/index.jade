@@ -4,26 +4,61 @@ html
         meta(charset="utf-8")
         meta(name="format-detection", content="telephone=no")
         meta(name="msapplication-tap-highlight", content="no")
-        //<!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
-        //<!-- <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" /> -->
+        // WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 
+        // <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" /> 
         meta(name="viewport", content="user-scalable=no, width=320")
         link(rel="stylesheet", href="jquery/jquery.mobile-1.4.3.min.css")
         script(src="jquery/jquery-2.1.1.js")
         script(src="jquery/jquery.mobile-1.4.3.min.js")
-        link(rel="stylesheet", type="text/css",href="css/index.css")
         title SAV - Sistema de Acompanhamentos de Visitas
         
         
     body
-        div(data-role="page", data-theme="b")
+        div#pglogin(data-role="page", data-theme="b")
             div(data-role="header")
                 h1 SAV
+
             div(role="main", class="ui-content")
-                p Page content goes here.
+                        h3 SAV - Sistema de Acompanhamento de Visitas
+
+                        form#loginForm
+                            div(data-role="fieldcontain",class="ui-hide-label")
+                                label(for="username") Usuário:
+                                input(type="text",name="username",id="username",value="",placeholder="Usuário")
+                                
+                            div(data-role="fieldcontain",class="ui-hide-label")
+                                label(for="password") Senha:
+                                input(type="password", name="password",id="password",value="",placeholder="Senha")
+
+                            input(type="submit",value="Entrar",id="submitButton")
+
+
             div(data-role="footer", data-position="fixed")
-                h4  
+                h4 &copy WSQ Informática
+                
+
+        div#pglogado(data-role="page", data-theme="b")
+            div(data-role="header")
+                h1 SAV
+
+            div(role="main", class="ui-content")
+                ul(data-role="listview",data-inset="true",data-divider-theme="b")
+                    li(data-role="list-divider" ) Atividade
+                    li 
+                       a(href="#") Iniciar Expediente
+                br 
+
+                ul(data-role="listview",data-inset="true",data-divider-theme="b")
+                    li(data-role="list-divider") Opções
+                    li
+                       a(href="#") Atividades Recentes
+                    li
+                       a(href="javascript:app.trocarUsuario();") Trocar de Usuario
+
+            div(data-role="footer", data-position="fixed")
+                h4 &copy WSQ Informática
 
         script(type="text/javascript", src="cordova.js")
         script(type="text/javascript", src="js/index.js")
-        script(type="text/javascript")
-             app = new App();
+        script(type="text/javascript").
+             var app = new App();

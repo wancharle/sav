@@ -32,9 +32,14 @@ node_modules/
 #ANDROID / ECLIPSE
 
 # generated files - android project subfolder
+**/platforms/
 Android/bin/
 Android/gen/
 Android/assets/
+**/android/bin/
+**/android/gen/
+**/android/assets/
+
 
 # generated files
 bin/
@@ -69,3 +74,15 @@ IOS/www/
 # Files that might appear on external disk
 .Spotlight-V100
 .Trashes
+
+*.ipa
+*.app
+*.a
+*.app.dSYM
+.staging
+*.tmproj
+*.apk
+*.apk.d
+*.ap_
+*.ap_.d
+platforms/android/bin/*
