@@ -43,17 +43,36 @@ html
 
             div(role="main", class="ui-content")
                 ul(data-role="listview",data-inset="true",data-divider-theme="b")
-                    li(data-role="list-divider" ) Atividade
                     li 
-                       a(href="#") Iniciar Expediente
+                       a(href="javascript:app.iniciarExpediente()") Iniciar Expediente
                 br 
 
-                ul(data-role="listview",data-inset="true",data-divider-theme="b")
-                    li(data-role="list-divider") Opções
+                ul#logulop(data-role="listview",data-inset="true",data-divider-theme="b")
+                    li(data-role="list-divider",data-count-theme='b') Opções
                     li
-                       a(href="#") Atividades Recentes
+                       a#logativrecent(href="#") Atividades Recentes
                     li
                        a(href="javascript:app.trocarUsuario();") Trocar de Usuario
+
+ 
+        div#pgexpediente(data-role="page", data-theme="b")
+            div(data-role="header")
+                h1 SAV
+
+            div(role="main", class="ui-content")
+                h3(style="text-align:center") Expediente 
+
+                p#expuser(style="text-align:center") Vitor 
+                p#expdata(style="text-align:center") 02/07/2014 às 09:02:39
+                p(style="text-align:center") 
+                    button.ui-btn.ui-btn-icon-right.ui-icon-carat-r.ui-corner-all(onclick="app.iniciarAtividade()") Iniciar Atividade
+
+                p(style="text-align:center") 
+                    button.ui-btn.ui-btn-icon-right.ui-icon-clock.ui-corner-all(onclick="app.iniciarAlmoço()") Iniciar Almoço
+
+                p(style="text-align:center") 
+                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.expediente.finalizar()") Finalizar Expediente
+
 
             div(data-role="footer", data-position="fixed")
                 h4 &copy WSQ Informática

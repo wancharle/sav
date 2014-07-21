@@ -1,8 +1,265 @@
 (function() {
-  var App,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  App = (function() {
+  Storage.prototype.setObject = function(key, value) {
+    return this.setItem(key, JSON.stringify(value));
+  };
+
+  Storage.prototype.getObject = function(key) {
+    var value;
+    value = this.getItem(key);
+    return value && JSON.parse(value);
+  };
+
+  window.formatadata = function(data) {
+    return data.getDate() + "/" + (parseInt(data.getMonth()) + 1) + '/' + data.getFullYear();
+  };
+
+  window.formatahora = function(data) {
+    return data.getHours() + ":" + data.getMinutes() + ':' + data.getSeconds();
+  };
+
+  window.Atividade = (function() {
+    Atividade.TIPO_AULA = 'AU';
+
+    Atividade.TIPO_ALMOCO = 'AL';
+
+    Atividade.TIPO_EXPEDIENTE = 'EX';
+
+    Atividade.estaAberta = function() {
+      var expdata;
+      expdata = window.localStorage.getItem('expediente_data');
+      if (expdata) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    Atividade.armazena = function(id_de_remocao, usuario, tipo, identificacao, gps, ativdata, horario_inicio, horario_fim, numero_de_presentes, numero_de_participantes) {
+      var atividade, atividades;
+      atividades = window.localStorage.getObject('atividades');
+      if (!atividades) {
+        atividades = new Array();
+      }
+      atividade = {
+        'usuario': usuario,
+        'id': identificacao,
+        'tipo': tipo,
+        'data': ativdata,
+        'h_inicio': horario_inicio,
+        'h_fim': horario_fim,
+        'gps': gps,
+        'pendente': true,
+        'time': (new Date()).getTime(),
+        'numero_de_presentes': numero_de_presentes,
+        'numero_de_participantes': numero_de_participantes
+      };
+      atividades.push(atividade);
+      window.localStorage.setObject('atividades', atividades);
+      window.localStorage.removeItem(id_de_remocao);
+      return Atividade.envia();
+    };
+
+    Atividade.clearAtividadesPendentes = function() {
+      var ativ, atividades, _i, _len, _ref;
+      atividades = new Array();
+      _ref = window.localStorage.getObject('atividades');
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        ativ = _ref[_i];
+        if (ativ['pendente']) {
+          ativ['pendente'] = false;
+        }
+        atividades.push(ativ);
+      }
+      return window.localStorage.setObject('atividades', atividades);
+    };
+
+    Atividade.getAtividadesPendentes = function() {
+      var ativ, atividades, atividadesPendentes, _i, _len;
+      atividadesPendentes = new Array();
+      atividades = window.localStorage.getObject('atividades');
+      if (!atividades) {
+        return null;
+      }
+      for (_i = 0, _len = atividades.length; _i < _len; _i++) {
+        ativ = atividades[_i];
+        if (ativ['pendente']) {
+          atividadesPendentes.push(ativ);
+        }
+      }
+      return atividadesPendentes;
+    };
+
+    Atividade.envia = function() {
+      var atividadesPendentes;
+      atividadesPendentes = Atividade.getAtividadesPendentes();
+      return $.ajax({
+        url: "http://sav.wancharle.com.br/registra_atividades/",
+        type: 'POST',
+        contentType: 'application/json',
+        data: {
+          json: JSON.stringify(atividadesPendentes)
+        },
+        dataType: 'json'
+      }).done(function(data) {
+        if (data === true) {
+          return window.localStorage.removeItem('atividadesPendentes');
+        }
+      }).fail(function(error, textstatus) {
+        alert('Não foi possível enviar os dados registrados ao servidor. Isso ocorre provavelmente por falta de conexão de dados no momento. Tente novamente quando tver um conexão de internet estável');
+        return console.log(textstatus);
+      });
+    };
+
+    function Atividade(tipo, identificacao) {
+      var data_ativ;
+      this.tipo = tipo;
+      this.storage = window.localStorage;
+      if (this.tipo === 'AU') {
+        this.identificacao = identificacao;
+      } else if (this.tipo === 'AL') {
+        this.identificacao = 'Almoço';
+      } else if (this.tipo === 'EX') {
+        this.identificacao = 'Expediente';
+      }
+      if (Atividade.estaAberta()) {
+        this.load();
+      } else {
+        data_ativ = new Date();
+        this.data_atividade = formatadata(data_ativ);
+        this.horario_inicio = formatahora(data_avit);
+        this.gps = Expediente.gps;
+        this.accuracy = Expediente.accuracy;
+        this.time = (new Date()).getTime();
+        this.save();
+      }
+    }
+
+    Atividade.prototype.load = function() {
+      this.ativdata = this.storage.getItem('atividade_data');
+      this.horario_inicio = this.storage.getItem('atividade_horario_inicio');
+      this.gps = this.storage.getItem('atividade_gps');
+      this.accuracy = this.storage.getItem('atividade_accuracy');
+      this.time = parseInt(this.storage.getTime('atividade_time'));
+      return this.expdata;
+    };
+
+    Atividade.prototype.save = function() {
+      this.storage.setItem('atividade_data', this.ativdata);
+      this.storage.setItem('atividade_horario_inicio', this.horario_inicio);
+      this.storage.setItem('atividade_horario_gps', this.gps);
+      this.storage.setItem('atividade_accuracy', this.accuracy);
+      return this.storage.setItem('atividade_time', this.time);
+    };
+
+    return Atividade;
+
+  })();
+
+  window.Expediente = (function() {
+    Expediente.tipo = "EX";
+
+    Expediente.gps = null;
+
+    Expediente.accuracy = 1000;
+
+    Expediente.estaAberto = function() {
+      var expdata;
+      expdata = window.localStorage.getItem('expediente_data');
+      if (expdata) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    function Expediente(usuario) {
+      var expdata;
+      this.usuario = usuario;
+      this.iniciaWatch = __bind(this.iniciaWatch, this);
+      this.storage = window.localStorage;
+      expdata = this.load();
+      if (!expdata) {
+        expdata = new Date();
+        this.expdata = formatadata(expdata);
+        this.horario_inicio = formatahora(expdata);
+        this.save();
+      }
+      Expediente.accuracy = 1000;
+      this.iniciaWatch();
+      $("#expuser").html(this.usuario);
+      $("#expdata").html(this.expdata + " às " + this.horario_inicio);
+    }
+
+    Expediente.prototype.load = function() {
+      if (Expediente.estaAberto()) {
+        this.expdata = this.storage.getItem('expediente_data');
+        this.horario_inicio = this.storage.getItem('expediente_horario_inicio');
+        Expediente.gps = this.storage.getItem('expediente_gps');
+        Expediente.accuracy = this.storage.getItem('expediente_accuracy');
+        return this.expdata;
+      } else {
+        return null;
+      }
+    };
+
+    Expediente.prototype.save = function() {
+      this.storage.setItem('expediente_data', this.expdata);
+      this.storage.setItem('expediente_horario_inicio', this.horario_inicio);
+      this.storage.setItem('expediente_gps', Expediente.gps);
+      return this.storage.setItem('expediente_accuracy', Expediente.accuracy);
+    };
+
+    Expediente.prototype.finalizar = function() {
+      this.horario_fim = formatahora(new Date());
+      this.storage.setItem('expediente_horario_fim', this.horario_fim);
+      Atividade.armazena('expediente_data', this.usuario, Atividade.TIPO_EXPEDIENTE, 'Expediente', Expediente.gps, this.expdata, this.horario_inicio, this.horario_fim);
+      return $.mobile.changePage('#pglogado', {
+        changeHash: false
+      });
+    };
+
+    Expediente.prototype.iniciaWatch = function() {
+      return this.watchid = navigator.geolocation.watchPosition((function(_this) {
+        return function(position) {
+          return _this.watchSucess(position);
+        };
+      })(this), (function(_this) {
+        return function(error) {
+          return _this.watchError(error);
+        };
+      })(this), {
+        enableHighAccuracy: true,
+        timeout: 1 * 60 * 1000
+      });
+    };
+
+    Expediente.prototype.watchSucess = function(position) {
+      if (Expediente.accuracy > position.coords.accuracy) {
+        Expediente.gps = position.coords.latitude + ", " + position.coords.longitude;
+        Expediente.accuracy = position.coords.accuracy;
+        return console.log("latlong: " + Expediente.gps + " accuracy:" + position.coords.accuracy);
+      }
+    };
+
+    Expediente.prototype.watchError = function(error) {
+      if (error.code === navigator.geolocation.PositionError.PERMISSION_DENIED) {
+        alert("Para que o sistema funcione por favor ative o GPS do seu telefone");
+      }
+      if (error.code === navigator.geolocation.PositionError.POSITION_UNAVAILABLE) {
+        alert("Não estou conseguindo obter uma posição do GPS, verifique se sua conexão GPS está ativa");
+      }
+      if (error.code === navigator.geolocation.PositionError.TIMEOUT) {
+        return console.log('timeout gps: ' + error.message);
+      }
+    };
+
+    return Expediente;
+
+  })();
+
+  window.App = (function() {
     function App() {
       this.onDeviceReady = __bind(this.onDeviceReady, this);
       this.bindEvents();
@@ -18,6 +275,13 @@
     App.prototype.setUsuario = function(usuario) {
       this.usuario = usuario;
       return this.storage.setItem('Usuario', this.usuario);
+    };
+
+    App.prototype.iniciarExpediente = function() {
+      this.expediente = new Expediente(this.usuario);
+      return $.mobile.changePage("#pgexpediente", {
+        changeHash: false
+      });
     };
 
     App.prototype.temAtividadesPendentes = function() {
@@ -72,11 +336,30 @@
       })(this));
     };
 
+    App.prototype.atualizaUI = function() {
+      var atividadesPendentes, html;
+      atividadesPendentes = Atividade.getAtividadesPendentes();
+      if (atividadesPendentes) {
+        alert('ola');
+        html = "Atividades Recentes <span class='ui-li-count'>" + atividadesPendentes.length + "</span>";
+        $('#logativrecent').html(html);
+        return $('#logulop').listview().listview('refresh');
+      }
+    };
+
     App.prototype.receivedEvent = function(id) {
       if (this.usuario) {
-        $.mobile.changePage("#pglogado", {
-          changeHash: false
-        });
+        this.atualizaUI();
+        if (Expediente.estaAberto()) {
+          this.expediente = new Expediente(this.usuario);
+          $.mobile.changePage("#pgexpediente", {
+            changeHash: false
+          });
+        } else {
+          $.mobile.changePage("#pglogado", {
+            changeHash: false
+          });
+        }
       }
       return console.log('Received Event: ' + id);
     };
@@ -84,7 +367,5 @@
     return App;
 
   })();
-
-  window.App = App;
 
 }).call(this);

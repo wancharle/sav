@@ -41,14 +41,32 @@
       </div>
       <div role="main" class="ui-content">
         <ul data-role="listview" data-inset="true" data-divider-theme="b">
-          <li data-role="list-divider">Atividade</li>
-          <li><a href="#">Iniciar Expediente</a></li>
+          <li><a href="javascript:app.iniciarExpediente()">Iniciar Expediente</a></li>
         </ul><br>
-        <ul data-role="listview" data-inset="true" data-divider-theme="b">
-          <li data-role="list-divider">Opções</li>
-          <li><a href="#">Atividades Recentes</a></li>
+        <ul id="logulop" data-role="listview" data-inset="true" data-divider-theme="b">
+          <li data-role="list-divider" data-count-theme="b">Opções</li>
+          <li><a id="logativrecent" href="#">Atividades Recentes</a></li>
           <li><a href="javascript:app.trocarUsuario();">Trocar de Usuario</a></li>
         </ul>
+      </div>
+    </div>
+    <div id="pgexpediente" data-role="page" data-theme="b">
+      <div data-role="header">
+        <h1>SAV</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <h3 style="text-align:center">Expediente </h3>
+        <p id="expuser" style="text-align:center">Vitor </p>
+        <p id="expdata" style="text-align:center">02/07/2014 às 09:02:39</p>
+        <p style="text-align:center">
+          <button onclick="app.iniciarAtividade()" class="ui-btn ui-btn-icon-right ui-icon-carat-r ui-corner-all">Iniciar Atividade</button>
+        </p>
+        <p style="text-align:center">
+          <button onclick="app.iniciarAlmoço()" class="ui-btn ui-btn-icon-right ui-icon-clock ui-corner-all">Iniciar Almoço</button>
+        </p>
+        <p style="text-align:center">
+          <button onclick="app.expediente.finalizar()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Expediente</button>
+        </p>
       </div>
       <div data-role="footer" data-position="fixed">
         <h4>&copy WSQ Informática</h4>
