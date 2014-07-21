@@ -50,7 +50,7 @@ html
                 ul#logulop(data-role="listview",data-inset="true",data-divider-theme="b")
                     li(data-role="list-divider",data-count-theme='b') Opções
                     li
-                       a#logativrecent(href="#") Atividades Recentes
+                       a#logativrecent(href="javascript:app.mostraHistorico()") Histórico de Atividades
                     li
                        a(href="javascript:app.trocarUsuario();") Trocar de Usuario
 
@@ -76,6 +76,18 @@ html
 
             div(data-role="footer", data-position="fixed")
                 h4 &copy WSQ Informática
+                
+        div#pghistorico(data-role="page", data-theme="b")
+            div(data-role="header")
+                h1 SAV
+
+            div(role="main", class="ui-content")
+                ul#ulhistorico(data-role="listview",data-filter="true",data-inset="true",data-divider-theme="b")
+
+            div(data-role="footer", data-position="fixed")
+                h4 &copy WSQ Informática
+
+
 
         script(type="text/javascript", src="cordova.js")
         script(type="text/javascript", src="js/index.js")

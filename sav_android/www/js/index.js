@@ -1,6 +1,12 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
+  window.zeroPad = function(num, places) {
+    var zero;
+    zero = places - num.toString().length + 1;
+    return Array(+(zero > 0 && zero)).join("0") + num;
+  };
+
   Storage.prototype.setObject = function(key, value) {
     return this.setItem(key, JSON.stringify(value));
   };
@@ -12,11 +18,11 @@
   };
 
   window.formatadata = function(data) {
-    return data.getDate() + "/" + (parseInt(data.getMonth()) + 1) + '/' + data.getFullYear();
+    return zeroPad(data.getDate(), 2) + "/" + zeroPad(parseInt(data.getMonth()) + 1, 2) + '/' + data.getFullYear();
   };
 
   window.formatahora = function(data) {
-    return data.getHours() + ":" + data.getMinutes() + ':' + data.getSeconds();
+    return zeroPad(data.getHours(), 2) + ":" + zeroPad(data.getMinutes(), 2) + ':' + zeroPad(data.getSeconds(), 2);
   };
 
   window.Atividade = (function() {
@@ -189,7 +195,7 @@
       Expediente.accuracy = 1000;
       this.iniciaWatch();
       $("#expuser").html(this.usuario);
-      $("#expdata").html(this.expdata + " às " + this.horario_inicio);
+      $("#expdata").html(this.expdata + " às " + this.horario_inicio.slice(0, 5) + "h");
     }
 
     Expediente.prototype.load = function() {
@@ -337,14 +343,35 @@
     };
 
     App.prototype.atualizaUI = function() {
-      var atividadesPendentes, html;
+      var ativ, atividades, atividadesPendentes, html, li, _i, _len;
       atividadesPendentes = Atividade.getAtividadesPendentes();
       if (atividadesPendentes) {
-        alert('ola');
-        html = "Atividades Recentes <span class='ui-li-count'>" + atividadesPendentes.length + "</span>";
+        html = "Histórico de Atividades <span class='ui-li-count'>" + atividadesPendentes.length + "</span>";
         $('#logativrecent').html(html);
-        return $('#logulop').listview().listview('refresh');
+        $('#logulop').listview().listview('refresh');
       }
+      atividades = window.localStorage.getObject('atividades');
+      if (atividades) {
+        html = "";
+        for (_i = 0, _len = atividades.length; _i < _len; _i++) {
+          ativ = atividades[_i];
+          li = "<li>";
+          li += "<h2>" + ativ['id'] + "</h2>";
+          li += "<p class='ui-li-aside'>" + ativ['data'] + "</p>";
+          li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h a " + ativ['h_fim'].slice(0, 5) + "h</p>";
+          li += "<p> Em: " + ativ["gps"] + "</p>";
+          html += li;
+        }
+        $('#ulhistorico').html(html);
+        return $('#ulhistorico').listview().listview('refresh');
+      }
+    };
+
+    App.prototype.mostraHistorico = function() {
+      this.atualizaUI();
+      return $.mobile.changePage("#pghistorico", {
+        changeHash: false
+      });
     };
 
     App.prototype.receivedEvent = function(id) {

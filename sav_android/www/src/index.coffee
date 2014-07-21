@@ -1,4 +1,8 @@
 
+window.zeroPad= (num, places) ->
+    zero = places - num.toString().length + 1;
+    return Array(+(zero > 0 && zero)).join("0") + num;
+
 Storage.prototype.setObject = (key, value) ->
         this.setItem(key, JSON.stringify(value))
 
@@ -8,11 +12,11 @@ Storage.prototype.getObject = (key) ->
         return value and JSON.parse(value)
 
 window.formatadata = (data) ->
-    return data.getDate()+"/"+(parseInt(data.getMonth())+1)+'/'+data.getFullYear()
+    return zeroPad(data.getDate(),2)+"/"+zeroPad(parseInt(data.getMonth())+1,2)+'/'+data.getFullYear()
 
 
 window.formatahora = (data) ->
-    return data.getHours()+":"+data.getMinutes()+':'+data.getSeconds()
+    return zeroPad(data.getHours(),2)+":"+zeroPad(data.getMinutes(),2)+':'+zeroPad(data.getSeconds(),2)
 
 class window.Atividade
     @TIPO_AULA = 'AU' 
@@ -147,7 +151,7 @@ class window.Expediente
         @iniciaWatch()
 
         $("#expuser").html(@usuario)
-        $("#expdata").html(@expdata + " às "+ @horario_inicio)
+        $("#expdata").html(@expdata + " às "+ @horario_inicio.slice(0,5)+"h")
        
     
     load: ()-> 
@@ -278,12 +282,32 @@ class window.App
         # atualiza counter na pagina de logado
         atividadesPendentes = Atividade.getAtividadesPendentes()
         if atividadesPendentes
-            html = "Atividades Recentes <span class='ui-li-count'>"+atividadesPendentes.length+"</span>"
+            html = "Histórico de Atividades <span class='ui-li-count'>"+atividadesPendentes.length+"</span>"
             $('#logativrecent').html(html)
             $('#logulop').listview().listview('refresh') 
 
         # atualiza counter na pagina de expediente
-        # atualiza pagina de atividades recentes
+        # ...
+        
+        # atualiza pagina de historico
+        atividades = window.localStorage.getObject('atividades')
+        if atividades
+            html = ""
+            for ativ in atividades
+                li = "<li>"
+                li+="<h2>"+ativ['id']+"</h2>"
+                li+="<p class='ui-li-aside'>"+ativ['data']+"</p>"
+                li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h a "+ativ['h_fim'].slice(0,5)+"h</p>"
+                li+="<p> Em: "+ ativ["gps"] + "</p>"
+                html+=li
+            $('#ulhistorico').html(html)
+            $('#ulhistorico').listview().listview('refresh')
+               
+               
+
+    mostraHistorico: () ->
+        @atualizaUI()
+        $.mobile.changePage("#pghistorico",{changeHash:false})
 
     receivedEvent: (id) ->
         if @usuario 

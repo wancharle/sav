@@ -45,7 +45,7 @@
         </ul><br>
         <ul id="logulop" data-role="listview" data-inset="true" data-divider-theme="b">
           <li data-role="list-divider" data-count-theme="b">Opções</li>
-          <li><a id="logativrecent" href="#">Atividades Recentes</a></li>
+          <li><a id="logativrecent" href="javascript:app.mostraHistorico()">Histórico de Atividades</a></li>
           <li><a href="javascript:app.trocarUsuario();">Trocar de Usuario</a></li>
         </ul>
       </div>
@@ -67,6 +67,17 @@
         <p style="text-align:center">
           <button onclick="app.expediente.finalizar()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Expediente</button>
         </p>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h4>&copy WSQ Informática</h4>
+      </div>
+    </div>
+    <div id="pghistorico" data-role="page" data-theme="b">
+      <div data-role="header">
+        <h1>SAV</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <ul id="ulhistorico" data-role="listview" data-filter="true" data-inset="true" data-divider-theme="b"></ul>
       </div>
       <div data-role="footer" data-position="fixed">
         <h4>&copy WSQ Informática</h4>
