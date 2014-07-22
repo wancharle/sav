@@ -2,7 +2,9 @@
 window.zeroPad= (num, places) ->
     zero = places - num.toString().length + 1;
     return Array(+(zero > 0 && zero)).join("0") + num;
-
+window.isInteger = (value)->
+    intRegex = /^\d+$/
+    return intRegex.test(value)
 Storage.prototype.setObject = (key, value) ->
         this.setItem(key, JSON.stringify(value))
 
@@ -24,7 +26,7 @@ class window.Atividade
     @TIPO_EXPEDIENTE = 'EX'
 
     @estaAberta: ->
-        expdata = window.localStorage.getItem('expediente_data')
+        expdata = window.localStorage.getItem('atividade_data')
         if expdata
             return true
         else
@@ -104,33 +106,76 @@ class window.Atividade
             @load()
         else
             data_ativ = new Date()
-            @data_atividade= formatadata(data_ativ)
-            @horario_inicio = formatahora(data_avit)
+            @ativid = identificacao
+            @ativdata= formatadata(data_ativ)
+            @horario_inicio = formatahora(data_ativ)
             @gps = Expediente.gps
+            @usuario = Expediente.usuario
             @accuracy = Expediente.accuracy
             @time = (new Date()).getTime()
             @save()
+ 
+        $("#ativuser").html(@usuario)
+        $("#ativdata").html(@ativdata + " às "+ @horario_inicio.slice(0,5)+"h")
+        $("#ativgps").html(@gps) 
+        $("#ativid").html(@ativid)
+       
             
     load: () ->
+         @tipo= @storage.getItem('ativtipo')
          @ativdata = @storage.getItem('atividade_data')
+         @ativid = @storage.getItem('ativid')
          @horario_inicio = @storage.getItem('atividade_horario_inicio')
          @gps = @storage.getItem('atividade_gps')
          @accuracy = @storage.getItem('atividade_accuracy')
-         @time =parseInt( @storage.getTime('atividade_time'))
+         @usuario = @storage.getItem('atividade_usuario')
+         @time =parseInt( @storage.getItem('atividade_time'))
          return @expdata
 
     save: () ->
+        @storage.setItem('ativtipo',@tipo)
+        @storage.setItem('ativid',@ativid)
         @storage.setItem('atividade_data',@ativdata)
+        @storage.setItem('atividade_usuario',@usuario)
         @storage.setItem('atividade_horario_inicio',@horario_inicio)
         @storage.setItem('atividade_horario_gps',@gps)
         @storage.setItem('atividade_accuracy',@accuracy)
         @storage.setItem('atividade_time',@time)
+
+    finalizar: ()->
+        n_presentes = $('#txtpresentes').val()
+        n_participantes = $('#txtparticipantes').val()
+        if isInteger(n_presentes) and isInteger(n_participantes)
+            if n_presentes < n_participantes
+                alert("O numero de pessoas presentes deve ser igual ou superior ou número de pessoas participantes da atividade!")
+                return
+
+            @horario_fim = formatahora(new Date())
+            @storage.setItem('atividade_horario_fim',@horario_fim)
+
+            Atividade.armazena('atividade_data',
+               @usuario,
+               @tipo,
+               @ativid,
+               Expediente.gps, # TODO:melhorar
+               @ativdata,
+               @horario_inicio,
+               @horario_fim,
+               n_presentes,
+               n_participantes,
+            ) 
+            $.mobile.changePage('#pglogado',{changeHash:false})
+        else
+            alert("Para finalizar a atividade é preciso informar o numero de participantes e presentes")
+
+
 
 
 
 class window.Expediente
     @tipo = "EX"
     @gps = null 
+    @usuario = null
     @accuracy = 1000
     @estaAberto: ->
          expdata = window.localStorage.getItem('expediente_data')
@@ -234,6 +279,13 @@ class window.App
     iniciarExpediente: () ->
         @expediente = new Expediente(@usuario)
         $.mobile.changePage("#pgexpediente",{changeHash:false})
+
+    iniciarAtividade: () ->
+        identificacao = window.prompt('Informe a turma/identificação da atividade')
+        if identificacao
+            @atividade = new Atividade(Atividade.TIPO_AULA, identificacao)
+            $.mobile.changePage('#pgatividade',{changeHash:false})
+
 
     temAtividadesPendentes: () ->
         return false

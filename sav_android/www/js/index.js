@@ -7,6 +7,12 @@
     return Array(+(zero > 0 && zero)).join("0") + num;
   };
 
+  window.isInteger = function(value) {
+    var intRegex;
+    intRegex = /^\d+$/;
+    return intRegex.test(value);
+  };
+
   Storage.prototype.setObject = function(key, value) {
     return this.setItem(key, JSON.stringify(value));
   };
@@ -34,7 +40,7 @@
 
     Atividade.estaAberta = function() {
       var expdata;
-      expdata = window.localStorage.getItem('expediente_data');
+      expdata = window.localStorage.getItem('atividade_data');
       if (expdata) {
         return true;
       } else {
@@ -133,30 +139,62 @@
         this.load();
       } else {
         data_ativ = new Date();
-        this.data_atividade = formatadata(data_ativ);
-        this.horario_inicio = formatahora(data_avit);
+        this.ativid = identificacao;
+        this.ativdata = formatadata(data_ativ);
+        this.horario_inicio = formatahora(data_ativ);
         this.gps = Expediente.gps;
+        this.usuario = Expediente.usuario;
         this.accuracy = Expediente.accuracy;
         this.time = (new Date()).getTime();
         this.save();
       }
+      $("#ativuser").html(this.usuario);
+      $("#ativdata").html(this.ativdata + " às " + this.horario_inicio.slice(0, 5) + "h");
+      $("#ativgps").html(this.gps);
+      $("#ativid").html(this.ativid);
     }
 
     Atividade.prototype.load = function() {
+      this.tipo = this.storage.getItem('ativtipo');
       this.ativdata = this.storage.getItem('atividade_data');
+      this.ativid = this.storage.getItem('ativid');
       this.horario_inicio = this.storage.getItem('atividade_horario_inicio');
       this.gps = this.storage.getItem('atividade_gps');
       this.accuracy = this.storage.getItem('atividade_accuracy');
-      this.time = parseInt(this.storage.getTime('atividade_time'));
+      this.usuario = this.storage.getItem('atividade_usuario');
+      this.time = parseInt(this.storage.getItem('atividade_time'));
       return this.expdata;
     };
 
     Atividade.prototype.save = function() {
+      this.storage.setItem('ativtipo', this.tipo);
+      this.storage.setItem('ativid', this.ativid);
       this.storage.setItem('atividade_data', this.ativdata);
+      this.storage.setItem('atividade_usuario', this.usuario);
       this.storage.setItem('atividade_horario_inicio', this.horario_inicio);
       this.storage.setItem('atividade_horario_gps', this.gps);
       this.storage.setItem('atividade_accuracy', this.accuracy);
       return this.storage.setItem('atividade_time', this.time);
+    };
+
+    Atividade.prototype.finalizar = function() {
+      var n_participantes, n_presentes;
+      n_presentes = $('#txtpresentes').val();
+      n_participantes = $('#txtparticipantes').val();
+      if (isInteger(n_presentes) && isInteger(n_participantes)) {
+        if (n_presentes < n_participantes) {
+          alert("O numero de pessoas presentes deve ser igual ou superior ou número de pessoas participantes da atividade!");
+          return;
+        }
+        this.horario_fim = formatahora(new Date());
+        this.storage.setItem('atividade_horario_fim', this.horario_fim);
+        Atividade.armazena('atividade_data', this.usuario, this.tipo, this.ativid, Expediente.gps, this.ativdata, this.horario_inicio, this.horario_fim, n_presentes, n_participantes);
+        return $.mobile.changePage('#pglogado', {
+          changeHash: false
+        });
+      } else {
+        return alert("Para finalizar a atividade é preciso informar o numero de participantes e presentes");
+      }
     };
 
     return Atividade;
@@ -167,6 +205,8 @@
     Expediente.tipo = "EX";
 
     Expediente.gps = null;
+
+    Expediente.usuario = null;
 
     Expediente.accuracy = 1000;
 
@@ -288,6 +328,17 @@
       return $.mobile.changePage("#pgexpediente", {
         changeHash: false
       });
+    };
+
+    App.prototype.iniciarAtividade = function() {
+      var identificacao;
+      identificacao = window.prompt('Informe a turma/identificação da atividade');
+      if (identificacao) {
+        this.atividade = new Atividade(Atividade.TIPO_AULA, identificacao);
+        return $.mobile.changePage('#pgatividade', {
+          changeHash: false
+        });
+      }
     };
 
     App.prototype.temAtividadesPendentes = function() {
