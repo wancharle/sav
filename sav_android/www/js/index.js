@@ -128,18 +128,18 @@
       var data_ativ;
       this.tipo = tipo;
       this.storage = window.localStorage;
-      if (this.tipo === 'AU') {
+      if (this.tipo === Atividade.TIPO_AULA) {
         this.identificacao = identificacao;
-      } else if (this.tipo === 'AL') {
+      } else if (this.tipo === Atividade.TIPO_ALMOCO) {
         this.identificacao = 'Almoço';
-      } else if (this.tipo === 'EX') {
+      } else if (this.tipo === Atividade.TIPO_EXPEDIENTE) {
         this.identificacao = 'Expediente';
       }
       if (Atividade.estaAberta()) {
         this.load();
       } else {
         data_ativ = new Date();
-        this.ativid = identificacao;
+        this.ativid = this.identificacao;
         this.ativdata = formatadata(data_ativ);
         this.horario_inicio = formatahora(data_ativ);
         this.gps = Expediente.gps;
@@ -148,10 +148,17 @@
         this.time = (new Date()).getTime();
         this.save();
       }
-      $("#ativuser").html(this.usuario);
-      $("#ativdata").html(this.ativdata + " às " + this.horario_inicio.slice(0, 5) + "h");
-      $("#ativgps").html(this.gps);
-      $("#ativid").html(this.ativid);
+      if (this.tipo === Atividade.TIPO_AULA) {
+        $("#ativuser").html(this.usuario);
+        $("#ativdata").html(this.ativdata + " às " + this.horario_inicio.slice(0, 5) + "h");
+        $("#ativgps").html(this.gps);
+        $("#ativid").html(this.ativid);
+      } else if (this.tipo === Atividade.TIPO_ALMOCO) {
+        $("#almouser").html(this.usuario);
+        $("#almodata").html(this.ativdata + " às " + this.horario_inicio.slice(0, 5) + "h");
+        $("#almogps").html(this.gps);
+        $("#almoid").html(this.ativid);
+      }
     }
 
     Atividade.prototype.load = function() {
@@ -197,6 +204,15 @@
       }
     };
 
+    Atividade.prototype.finalizarAlmoco = function() {
+      this.horario_fim = formatahora(new Date());
+      this.storage.setItem('atividade_horario_fim', this.horario_fim);
+      Atividade.armazena('atividade_data', this.usuario, this.tipo, this.ativid, Expediente.gps, this.ativdata, this.horario_inicio, this.horario_fim);
+      return $.mobile.changePage('#pglogado', {
+        changeHash: false
+      });
+    };
+
     return Atividade;
 
   })();
@@ -234,6 +250,7 @@
       }
       Expediente.accuracy = 1000;
       this.iniciaWatch();
+      Expediente.usuario = this.usuario;
       $("#expuser").html(this.usuario);
       $("#expdata").html(this.expdata + " às " + this.horario_inicio.slice(0, 5) + "h");
     }
@@ -308,9 +325,10 @@
   window.App = (function() {
     function App() {
       this.onDeviceReady = __bind(this.onDeviceReady, this);
-      this.bindEvents();
+      this.submitLogin = __bind(this.submitLogin, this);
       this.storage = window.localStorage;
       this.usuario = this.getUsuario();
+      this.bindEvents();
     }
 
     App.prototype.getUsuario = function() {
@@ -341,13 +359,20 @@
       }
     };
 
+    App.prototype.iniciarAlmoço = function() {
+      this.atividade = new Atividade(Atividade.TIPO_ALMOCO);
+      return $.mobile.changePage('#pgalmoco', {
+        changeHash: false
+      });
+    };
+
     App.prototype.temAtividadesPendentes = function() {
-      return false;
+      return Atividade.estaAberta();
     };
 
     App.prototype.trocarUsuario = function() {
-      if (this.temAtividadesPendentes === true) {
-        return alert("Existem registros de atividades não enviados aos gerentes. Só é possivel trocar de usuário após enviar todos os registros pendentes.");
+      if (this.temAtividadesPendentes() === true) {
+        return alert("Por algum motivo desconhecido existem registros de atividades não finalizadas. Só é possivel trocar de usuário após finalizar todas as atividades.");
       } else {
         this.storage.removeItem('Usuario');
         this.usuario = null;
@@ -361,36 +386,37 @@
       return document.addEventListener('deviceready', this.onDeviceReady, false);
     };
 
+    App.prototype.submitLogin = function(e) {
+      var p, u, url;
+      $("#submitButton").attr("disabled", "disabled");
+      u = $("#username").val();
+      p = $("#password").val();
+      if (u && p) {
+        url = "http://sav.wancharle.com.br/logar/";
+        $.post(url, {
+          username: u,
+          password: p
+        }, (function(_this) {
+          return function(res) {
+            if (res === true) {
+              _this.setUsuario(u);
+              $.mobile.changePage("#pglogado", {
+                changeHash: false
+              });
+            } else {
+              alert("Usuário ou Senha inválidos!");
+            }
+            return $("#submitButton").removeAttr("disabled");
+          };
+        })(this), "json");
+      } else {
+        $("#submitButton").removeAttr("disabled");
+      }
+      return false;
+    };
+
     App.prototype.onDeviceReady = function() {
-      app.receivedEvent('deviceready');
-      return $("#loginForm").on("submit", (function(_this) {
-        return function(e) {
-          var p, u, url;
-          $("#submitButton").attr("disabled", "disabled");
-          u = $("#username").val();
-          p = $("#password").val();
-          if (u && p) {
-            url = "http://sav.wancharle.com.br/logar/";
-            $.post(url, {
-              username: u,
-              password: p
-            }, function(res) {
-              if (res === true) {
-                _this.setUsuario(u);
-                $.mobile.changePage("#pglogado", {
-                  changeHash: false
-                });
-              } else {
-                alert("Usuário ou Senha inválidos!");
-              }
-              return $("#submitButton").removeAttr("disabled");
-            }, "json");
-          } else {
-            $("#submitButton").removeAttr("disabled");
-          }
-          return false;
-        };
-      })(this));
+      return app.main();
     };
 
     App.prototype.atualizaUI = function() {
@@ -408,9 +434,12 @@
           ativ = atividades[_i];
           li = "<li>";
           li += "<h2>" + ativ['id'] + "</h2>";
-          li += "<p class='ui-li-aside'>" + ativ['data'] + "</p>";
-          li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h a " + ativ['h_fim'].slice(0, 5) + "h</p>";
-          li += "<p> Em: " + ativ["gps"] + "</p>";
+          li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
+          li += "<p> " + ativ['data'] + '</p>';
+          li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+          if (ativ['tipo'] === Atividade.TIPO_AULA) {
+            li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
+          }
           html += li;
         }
         $('#ulhistorico').html(html);
@@ -425,21 +454,49 @@
       });
     };
 
-    App.prototype.receivedEvent = function(id) {
+    App.prototype.load = function() {
       if (this.usuario) {
         this.atualizaUI();
         if (Expediente.estaAberto()) {
           this.expediente = new Expediente(this.usuario);
-          $.mobile.changePage("#pgexpediente", {
-            changeHash: false
-          });
+          if (Atividade.estaAberta()) {
+            this.atividade = new Atividade();
+            if (this.atividade.tipo === Atividade.TIPO_ALMOCO) {
+              return $.mobile.changePage("#pgalmoco", {
+                changeHash: false
+              });
+            } else if (this.atividade.tipo === Atividade.TIPO_AULA) {
+              return $.mobile.changePage("#pgalmoco", {
+                changeHash: false
+              });
+            } else if (this.atividade.tipo === Atividade.TIPO_EXPEDIENTE) {
+              return $.mobile.changePage("#pgexpediente", {
+                changeHash: false
+              });
+            } else {
+              return console.log('error: tipo desconhecido de atividade');
+            }
+          } else {
+            return $.mobile.changePage("#pgexpediente", {
+              changeHash: false
+            });
+          }
         } else {
-          $.mobile.changePage("#pglogado", {
+          return $.mobile.changePage("#pglogado", {
             changeHash: false
           });
         }
       }
-      return console.log('Received Event: ' + id);
+    };
+
+    App.prototype.main = function() {
+      console.log('Received Event: onDeviceReady');
+      this.load();
+      return $("#loginForm").on("submit", (function(_this) {
+        return function(e) {
+          return _this.submitLogin(e);
+        };
+      })(this));
     };
 
     return App;

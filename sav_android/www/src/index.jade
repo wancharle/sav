@@ -68,7 +68,7 @@ html
                     button.ui-btn.ui-btn-icon-right.ui-icon-carat-r.ui-corner-all(onclick="app.iniciarAtividade()") Iniciar Atividade
 
                 p(style="text-align:center") 
-                    button.ui-btn.ui-btn-icon-right.ui-icon-clock.ui-corner-all(onclick="app.iniciarAlmoço()") Iniciar Almoço
+                    button.ui-btn.ui-btn-icon-right.ui-icon-clock.ui-corner-all(onclick="app.iniciarAlmoço()") Iniciar Horário de Almoço
 
                 p(style="text-align:center") 
                     button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.expediente.finalizar()") Finalizar Expediente
@@ -82,10 +82,32 @@ html
                 h1 SAV
 
             div(role="main", class="ui-content")
-                ul#ulhistorico(data-role="listview",data-filter="true",data-inset="true",data-divider-theme="b")
+                ul#ulhistorico(data-role="listview",data-filter="true",data-filter-placeholder='Buscar' data-inset="true",data-divider-theme="b")
 
             div(data-role="footer", data-position="fixed")
                 h4 &copy WSQ Informática
+
+        div#pgalmoco(data-role="page", data-theme="b")
+            div(data-role="header")
+                h1 SAV
+
+            div(role="main", class="ui-content")
+                h3(style="text-align:center") Em horário de almoço 
+
+
+                p#almouser(style="text-align:center") Vitor 
+                p#almodata(style="text-align:center") 02/07/2014 às 09:02:39
+                p#almogps(style="text-align:center") 02/07/2014 às 09:02:39
+
+
+                p(style="text-align:center") 
+                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="$.mobile.changePage('#pgfimalmoco',{changeHash:false})") Finalizar Almoço
+
+
+            div(data-role="footer", data-position="fixed")
+                h4 &copy WSQ Informática
+
+
 
         div#pgatividade(data-role="page", data-theme="b")
             div(data-role="header")
@@ -117,7 +139,6 @@ html
                 h3(style="text-align:center") Deseja Finalizar atividade?
 
                 p(style="text-align:center") 
-                p(style="text-align:center") 
                     input(name="txtpresentes",id="txtpresentes",step='1',placeholder="nº de presentes",value="",type="number")
                 p(style="text-align:center") 
                     input(name="txtparticipantes",id="txtparticipantes",step='1',placeholder="nº de participantes",value="",type="number")
@@ -125,6 +146,18 @@ html
                 p(style="text-align:center") 
                     button.ui-btn.ui-btn-inline.ui-corner-all(onclick="$.mobile.changePage('#pgatividade',{changeHash:false})") Não
                     button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.atividade.finalizar()") Sim
+
+        div#pgfimalmoco(data-role="page", data-theme="b")
+            div(data-role="header")
+                h1 SAV
+
+            div(role="main", class="ui-content")
+                h3(style="text-align:center") Deseja Finalizar o almoço?
+
+                p(style="text-align:center") 
+                    button.ui-btn.ui-btn-inline.ui-corner-all(onclick="$.mobile.changePage('#pgalmoco',{changeHash:false})") Não
+                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.atividade.finalizarAlmoco()") Sim
+
 
 
             div(data-role="footer", data-position="fixed")

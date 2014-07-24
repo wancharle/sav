@@ -62,7 +62,7 @@
           <button onclick="app.iniciarAtividade()" class="ui-btn ui-btn-icon-right ui-icon-carat-r ui-corner-all">Iniciar Atividade</button>
         </p>
         <p style="text-align:center">
-          <button onclick="app.iniciarAlmoço()" class="ui-btn ui-btn-icon-right ui-icon-clock ui-corner-all">Iniciar Almoço</button>
+          <button onclick="app.iniciarAlmoço()" class="ui-btn ui-btn-icon-right ui-icon-clock ui-corner-all">Iniciar Horário de Almoço</button>
         </p>
         <p style="text-align:center">
           <button onclick="app.expediente.finalizar()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Expediente</button>
@@ -77,7 +77,24 @@
         <h1>SAV</h1>
       </div>
       <div role="main" class="ui-content">
-        <ul id="ulhistorico" data-role="listview" data-filter="true" data-inset="true" data-divider-theme="b"></ul>
+        <ul id="ulhistorico" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-divider-theme="b"></ul>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h4>&copy WSQ Informática</h4>
+      </div>
+    </div>
+    <div id="pgalmoco" data-role="page" data-theme="b">
+      <div data-role="header">
+        <h1>SAV</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <h3 style="text-align:center">Em horário de almoço </h3>
+        <p id="almouser" style="text-align:center">Vitor </p>
+        <p id="almodata" style="text-align:center">02/07/2014 às 09:02:39</p>
+        <p id="almogps" style="text-align:center">02/07/2014 às 09:02:39</p>
+        <p style="text-align:center">
+          <button onclick="$.mobile.changePage('#pgfimalmoco',{changeHash:false})" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Almoço</button>
+        </p>
       </div>
       <div data-role="footer" data-position="fixed">
         <h4>&copy WSQ Informática</h4>
@@ -107,7 +124,6 @@
       </div>
       <div role="main" class="ui-content">
         <h3 style="text-align:center">Deseja Finalizar atividade?</h3>
-        <p style="text-align:center"></p>
         <p style="text-align:center">
           <input name="txtpresentes" id="txtpresentes" step="1" placeholder="nº de presentes" value="" type="number">
         </p>
@@ -117,6 +133,18 @@
         <p style="text-align:center">
           <button onclick="$.mobile.changePage('#pgatividade',{changeHash:false})" class="ui-btn ui-btn-inline ui-corner-all">Não</button>
           <button onclick="app.atividade.finalizar()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Sim</button>
+        </p>
+      </div>
+    </div>
+    <div id="pgfimalmoco" data-role="page" data-theme="b">
+      <div data-role="header">
+        <h1>SAV</h1>
+      </div>
+      <div role="main" class="ui-content">
+        <h3 style="text-align:center">Deseja Finalizar o almoço?</h3>
+        <p style="text-align:center">
+          <button onclick="$.mobile.changePage('#pgalmoco',{changeHash:false})" class="ui-btn ui-btn-inline ui-corner-all">Não</button>
+          <button onclick="app.atividade.finalizarAlmoco()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Sim</button>
         </p>
       </div>
       <div data-role="footer" data-position="fixed">

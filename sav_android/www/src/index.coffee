@@ -95,18 +95,18 @@ class window.Atividade
     
     constructor: (@tipo, identificacao ) ->
         @storage = window.localStorage
-        if @tipo == 'AU'
+        if @tipo == Atividade.TIPO_AULA
            @identificacao = identificacao
-        else if @tipo == 'AL'
+        else if @tipo == Atividade.TIPO_ALMOCO
            @identificacao = 'Almoço'
-        else if @tipo == 'EX'
+        else if @tipo == Atividade.TIPO_EXPEDIENTE
            @identificacao = 'Expediente'
    
         if Atividade.estaAberta()
             @load()
         else
             data_ativ = new Date()
-            @ativid = identificacao
+            @ativid = @identificacao
             @ativdata= formatadata(data_ativ)
             @horario_inicio = formatahora(data_ativ)
             @gps = Expediente.gps
@@ -115,11 +115,17 @@ class window.Atividade
             @time = (new Date()).getTime()
             @save()
  
-        $("#ativuser").html(@usuario)
-        $("#ativdata").html(@ativdata + " às "+ @horario_inicio.slice(0,5)+"h")
-        $("#ativgps").html(@gps) 
-        $("#ativid").html(@ativid)
-       
+        if @tipo == Atividade.TIPO_AULA
+            $("#ativuser").html(@usuario)
+            $("#ativdata").html(@ativdata + " às "+ @horario_inicio.slice(0,5)+"h")
+            $("#ativgps").html(@gps) 
+            $("#ativid").html(@ativid)
+        else if @tipo ==Atividade.TIPO_ALMOCO
+            $("#almouser").html(@usuario)
+            $("#almodata").html(@ativdata + " às "+ @horario_inicio.slice(0,5)+"h")
+            $("#almogps").html(@gps) 
+            $("#almoid").html(@ativid)
+        
             
     load: () ->
          @tipo= @storage.getItem('ativtipo')
@@ -167,6 +173,21 @@ class window.Atividade
             $.mobile.changePage('#pglogado',{changeHash:false})
         else
             alert("Para finalizar a atividade é preciso informar o numero de participantes e presentes")
+    finalizarAlmoco: ()->
+        @horario_fim = formatahora(new Date())
+        @storage.setItem('atividade_horario_fim',@horario_fim)
+
+        Atividade.armazena('atividade_data',
+           @usuario,
+           @tipo,
+           @ativid,
+           Expediente.gps, # TODO:melhorar
+           @ativdata,
+           @horario_inicio,
+           @horario_fim,
+        )
+        $.mobile.changePage('#pglogado',{changeHash:false})
+
 
 
 
@@ -194,6 +215,8 @@ class window.Expediente
             @save()
         Expediente.accuracy = 1000
         @iniciaWatch()
+        
+        Expediente.usuario = @usuario
 
         $("#expuser").html(@usuario)
         $("#expdata").html(@expdata + " às "+ @horario_inicio.slice(0,5)+"h")
@@ -216,7 +239,6 @@ class window.Expediente
         @storage.setItem('expediente_accuracy',Expediente.accuracy)
 
     finalizar: ()->
-        #TODO: checar se existe atividades abertas
         @horario_fim = formatahora(new Date())
         @storage.setItem('expediente_horario_fim',@horario_fim)
 
@@ -264,10 +286,10 @@ class window.Expediente
 class window.App
     # Application Constructor
     constructor: () ->
-        this.bindEvents()
         @storage = window.localStorage
         @usuario = this.getUsuario()
-   
+        this.bindEvents()
+  
     getUsuario: () ->
         @usuario = @storage.getItem('Usuario')
         return @usuario
@@ -286,13 +308,17 @@ class window.App
             @atividade = new Atividade(Atividade.TIPO_AULA, identificacao)
             $.mobile.changePage('#pgatividade',{changeHash:false})
 
+    iniciarAlmoço: () ->
+        @atividade = new Atividade(Atividade.TIPO_ALMOCO)
+        $.mobile.changePage('#pgalmoco',{changeHash:false})
+
 
     temAtividadesPendentes: () ->
-        return false
+        return Atividade.estaAberta()
 
     trocarUsuario: () ->
-        if @temAtividadesPendentes == true
-           alert("Existem registros de atividades não enviados aos gerentes. Só é possivel trocar de usuário após enviar todos os registros pendentes.")
+        if @temAtividadesPendentes() == true
+           alert("Por algum motivo desconhecido existem registros de atividades não finalizadas. Só é possivel trocar de usuário após finalizar todas as atividades.")
         else
             @storage.removeItem('Usuario')
             @usuario = null
@@ -305,30 +331,32 @@ class window.App
 
     # The scope of 'this' is the event. In order to call the 'receivedEvent'
     # function, we must explicitly call 'app.receivedEvent(...);'
-    onDeviceReady: () =>
-        app.receivedEvent('deviceready')
-        $("#loginForm").on "submit", (e) =>
-            #disable the button so we can't resubmit while we wait
-            $("#submitButton").attr("disabled","disabled")
-            u = $("#username").val()
-            p = $("#password").val()
-            if(u and  p )
-                url = "http://sav.wancharle.com.br/logar/"
-                $.post(url, {username:u,password:p}, (res) =>
-                        
-                    if(res == true)
-                        @setUsuario u
-                        $.mobile.changePage("#pglogado",{changeHash:false})
-                    else
-                        alert("Usuário ou Senha inválidos!")
+    submitLogin: (e) =>
+        #disable the button so we can't resubmit while we wait
+        $("#submitButton").attr("disabled","disabled")
+        u = $("#username").val()
+        p = $("#password").val()
+        if(u and  p )
+            url = "http://sav.wancharle.com.br/logar/"
+            $.post(url, {username:u,password:p}, (res) =>
                     
-                    $("#submitButton").removeAttr("disabled")
-                ,"json")
-            else
+                if(res == true)
+                    @setUsuario u
+                    $.mobile.changePage("#pglogado",{changeHash:false})
+                else
+                    alert("Usuário ou Senha inválidos!")
+                
                 $("#submitButton").removeAttr("disabled")
-            return false
+            ,"json")
+        else
+            $("#submitButton").removeAttr("disabled")
+        return false
 
-   
+
+    onDeviceReady: () =>
+        app.main()
+        
+            
     # Update DOM on a Received Event
     atualizaUI: ()->
         # atualiza counter na pagina de logado
@@ -348,9 +376,12 @@ class window.App
             for ativ in atividades
                 li = "<li>"
                 li+="<h2>"+ativ['id']+"</h2>"
-                li+="<p class='ui-li-aside'>"+ativ['data']+"</p>"
-                li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h a "+ativ['h_fim'].slice(0,5)+"h</p>"
-                li+="<p> Em: "+ ativ["gps"] + "</p>"
+                li+="<p> "+ativ['usuario']+ '@(' + ativ['gps']+ ")</p>"
+                li+="<p> "+ativ['data']+ '</p>'
+                li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
+                if ativ['tipo'] == Atividade.TIPO_AULA
+                    li+="<p> Participantes/Presentes: "+ ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>"
+
                 html+=li
             $('#ulhistorico').html(html)
             $('#ulhistorico').listview().listview('refresh')
@@ -361,13 +392,28 @@ class window.App
         @atualizaUI()
         $.mobile.changePage("#pghistorico",{changeHash:false})
 
-    receivedEvent: (id) ->
+    load: () ->
         if @usuario 
             @atualizaUI()
             if Expediente.estaAberto()
                 @expediente = new Expediente(@usuario)
-                $.mobile.changePage("#pgexpediente",{changeHash:false})
+                if Atividade.estaAberta()
+                    @atividade = new Atividade()
+                    if @atividade.tipo == Atividade.TIPO_ALMOCO
+                        $.mobile.changePage("#pgalmoco",{changeHash:false})
+                    else if @atividade.tipo == Atividade.TIPO_AULA
+                        $.mobile.changePage("#pgalmoco",{changeHash:false})
+                    else if @atividade.tipo == Atividade.TIPO_EXPEDIENTE
+                        $.mobile.changePage("#pgexpediente",{changeHash:false})
+                    else
+                        console.log('error: tipo desconhecido de atividade')
+                else
+                    $.mobile.changePage("#pgexpediente",{changeHash:false})
             else
                 $.mobile.changePage("#pglogado",{changeHash:false})
-        console.log('Received Event: ' + id)
 
+    main: () ->
+        console.log('Received Event: onDeviceReady')
+        @load()
+        $("#loginForm").on("submit", (e) => @submitLogin(e) )
+      
