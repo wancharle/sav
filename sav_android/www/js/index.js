@@ -400,9 +400,7 @@
           return function(res) {
             if (res === true) {
               _this.setUsuario(u);
-              $.mobile.changePage("#pglogado", {
-                changeHash: false
-              });
+              _this.load();
             } else {
               alert("Usuário ou Senha inválidos!");
             }
@@ -486,6 +484,10 @@
             changeHash: false
           });
         }
+      } else {
+        return $.mobile.changePage("#pglogin", {
+          changeHash: false
+        });
       }
     };
 

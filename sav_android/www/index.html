@@ -13,6 +13,11 @@
     <title>SAV - Sistema de Acompanhamentos de Visitas</title>
   </head>
   <body>
+    <div id="pgloading" data-role="page" data-theme="b">
+      <div data-role="header"></div>
+      <div role="main" class="ui-content"></div>
+      <div data-role="footer" data-position="fixed"></div>
+    </div>
     <div id="pglogin" data-role="page" data-theme="b">
       <div data-role="header">
         <h1>SAV</h1>
@@ -48,6 +53,9 @@
           <li><a id="logativrecent" href="javascript:app.mostraHistorico()">Histórico de Atividades</a></li>
           <li><a href="javascript:app.trocarUsuario();">Trocar de Usuario</a></li>
         </ul>
+      </div>
+      <div data-role="footer" data-position="fixed">
+        <h4>&copy WSQ Informática</h4>
       </div>
     </div>
     <div id="pgexpediente" data-role="page" data-theme="b">

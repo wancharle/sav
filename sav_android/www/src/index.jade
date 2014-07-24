@@ -14,6 +14,14 @@ html
         
         
     body
+
+        div#pgloading(data-role="page", data-theme="b")
+            div(data-role="header")
+
+            div(role="main", class="ui-content")
+
+            div(data-role="footer", data-position="fixed")
+                
         div#pglogin(data-role="page", data-theme="b")
             div(data-role="header")
                 h1 SAV
@@ -53,6 +61,10 @@ html
                        a#logativrecent(href="javascript:app.mostraHistorico()") Histórico de Atividades
                     li
                        a(href="javascript:app.trocarUsuario();") Trocar de Usuario
+
+            div(data-role="footer", data-position="fixed")
+                h4 &copy WSQ Informática
+    
 
  
         div#pgexpediente(data-role="page", data-theme="b")

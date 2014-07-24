@@ -342,7 +342,7 @@ class window.App
                     
                 if(res == true)
                     @setUsuario u
-                    $.mobile.changePage("#pglogado",{changeHash:false})
+                    @load()
                 else
                     alert("Usuário ou Senha inválidos!")
                 
@@ -411,7 +411,8 @@ class window.App
                     $.mobile.changePage("#pgexpediente",{changeHash:false})
             else
                 $.mobile.changePage("#pglogado",{changeHash:false})
-
+        else
+            $.mobile.changePage("#pglogin",{changeHash:false})
     main: () ->
         console.log('Received Event: onDeviceReady')
         @load()
