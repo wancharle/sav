@@ -196,7 +196,7 @@
         this.horario_fim = formatahora(new Date());
         this.storage.setItem('atividade_horario_fim', this.horario_fim);
         Atividade.armazena('atividade_data', this.usuario, this.tipo, this.ativid, Expediente.gps, this.ativdata, this.horario_inicio, this.horario_fim, n_presentes, n_participantes);
-        return $.mobile.changePage('#pglogado', {
+        return $.mobile.changePage('#pgexpediente', {
           changeHash: false
         });
       } else {
@@ -208,7 +208,7 @@
       this.horario_fim = formatahora(new Date());
       this.storage.setItem('atividade_horario_fim', this.horario_fim);
       Atividade.armazena('atividade_data', this.usuario, this.tipo, this.ativid, Expediente.gps, this.ativdata, this.horario_inicio, this.horario_fim);
-      return $.mobile.changePage('#pglogado', {
+      return $.mobile.changePage('#pgexpediente', {
         changeHash: false
       });
     };
@@ -307,13 +307,13 @@
     };
 
     Expediente.prototype.watchError = function(error) {
-      if (error.code === navigator.geolocation.PositionError.PERMISSION_DENIED) {
+      if (error.code === error.PERMISSION_DENIED) {
         alert("Para que o sistema funcione por favor ative o GPS do seu telefone");
       }
-      if (error.code === navigator.geolocation.PositionError.POSITION_UNAVAILABLE) {
+      if (error.code === error.POSITION_UNAVAILABLE) {
         alert("Não estou conseguindo obter uma posição do GPS, verifique se sua conexão GPS está ativa");
       }
-      if (error.code === navigator.geolocation.PositionError.TIMEOUT) {
+      if (error.code === error.TIMEOUT) {
         return console.log('timeout gps: ' + error.message);
       }
     };
@@ -324,7 +324,6 @@
 
   window.App = (function() {
     function App() {
-      this.onDeviceReady = __bind(this.onDeviceReady, this);
       this.submitLogin = __bind(this.submitLogin, this);
       this.storage = window.localStorage;
       this.usuario = this.getUsuario();
@@ -452,7 +451,7 @@
       });
     };
 
-    App.prototype.load = function() {
+    App.prototype.load = function(gps) {
       if (this.usuario) {
         this.atualizaUI();
         if (Expediente.estaAberto()) {
@@ -464,7 +463,7 @@
                 changeHash: false
               });
             } else if (this.atividade.tipo === Atividade.TIPO_AULA) {
-              return $.mobile.changePage("#pgalmoco", {
+              return $.mobile.changePage("#pgatividade", {
                 changeHash: false
               });
             } else if (this.atividade.tipo === Atividade.TIPO_EXPEDIENTE) {
@@ -489,6 +488,14 @@
           changeHash: false
         });
       }
+    };
+
+    App.prototype.positionSucess = function(gps) {
+      return this.load(gps);
+    };
+
+    App.prototype.positionError = function(error) {
+      return alert('Não foi possível obter sua localização. Verifique as configurações do seu smartphone.');
     };
 
     App.prototype.main = function() {

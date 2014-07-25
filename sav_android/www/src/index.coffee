@@ -170,7 +170,7 @@ class window.Atividade
                n_presentes,
                n_participantes,
             ) 
-            $.mobile.changePage('#pglogado',{changeHash:false})
+            $.mobile.changePage('#pgexpediente',{changeHash:false})
         else
             alert("Para finalizar a atividade é preciso informar o numero de participantes e presentes")
     finalizarAlmoco: ()->
@@ -186,7 +186,7 @@ class window.Atividade
            @horario_inicio,
            @horario_fim,
         )
-        $.mobile.changePage('#pglogado',{changeHash:false})
+        $.mobile.changePage('#pgexpediente',{changeHash:false})
 
 
 
@@ -274,13 +274,13 @@ class window.Expediente
             console.log("latlong: "+Expediente.gps + " accuracy:"+position.coords.accuracy)
 
     watchError: (error) ->
-        if error.code == navigator.geolocation.PositionError.PERMISSION_DENIED
+        if error.code == error.PERMISSION_DENIED
            alert("Para que o sistema funcione por favor ative o GPS do seu telefone")
 
-        if error.code == navigator.geolocation.PositionError.POSITION_UNAVAILABLE
+        if error.code == error.POSITION_UNAVAILABLE
            alert("Não estou conseguindo obter uma posição do GPS, verifique se sua conexão GPS está ativa")
 
-        if error.code == navigator.geolocation.PositionError.TIMEOUT
+        if error.code == error.TIMEOUT
            console.log('timeout gps: ' + error.message)
 
 class window.App
@@ -353,7 +353,7 @@ class window.App
         return false
 
 
-    onDeviceReady: () =>
+    onDeviceReady: () ->
         app.main()
         
             
@@ -392,7 +392,7 @@ class window.App
         @atualizaUI()
         $.mobile.changePage("#pghistorico",{changeHash:false})
 
-    load: () ->
+    load: (gps) ->
         if @usuario 
             @atualizaUI()
             if Expediente.estaAberto()
@@ -402,7 +402,7 @@ class window.App
                     if @atividade.tipo == Atividade.TIPO_ALMOCO
                         $.mobile.changePage("#pgalmoco",{changeHash:false})
                     else if @atividade.tipo == Atividade.TIPO_AULA
-                        $.mobile.changePage("#pgalmoco",{changeHash:false})
+                        $.mobile.changePage("#pgatividade",{changeHash:false})
                     else if @atividade.tipo == Atividade.TIPO_EXPEDIENTE
                         $.mobile.changePage("#pgexpediente",{changeHash:false})
                     else
@@ -413,8 +413,15 @@ class window.App
                 $.mobile.changePage("#pglogado",{changeHash:false})
         else
             $.mobile.changePage("#pglogin",{changeHash:false})
+
+    positionSucess: (gps) ->
+        @load(gps)
+
+    positionError: (error) ->
+        alert('Não foi possível obter sua localização. Verifique as configurações do seu smartphone.') 
+
     main: () ->
-        console.log('Received Event: onDeviceReady')
+        console.log('Received Event: onDeviceReady' )
         @load()
         $("#loginForm").on("submit", (e) => @submitLogin(e) )
       
