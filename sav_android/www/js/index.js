@@ -13,6 +13,12 @@
     return intRegex.test(value);
   };
 
+  if (!window.console) {
+    window.console = {
+      log: function() {}
+    };
+  }
+
   Storage.prototype.setObject = function(key, value) {
     return this.setItem(key, JSON.stringify(value));
   };
@@ -82,9 +88,12 @@
         if (ativ['pendente']) {
           ativ['pendente'] = false;
         }
-        atividades.push(ativ);
+        if (ativ['data'] === formatadata(new Date())) {
+          atividades.push(ativ);
+        }
       }
-      return window.localStorage.setObject('atividades', atividades);
+      window.localStorage.setObject('atividades', atividades);
+      return app.atualizaUI();
     };
 
     Atividade.getAtividadesPendentes = function() {
@@ -106,17 +115,13 @@
     Atividade.envia = function() {
       var atividadesPendentes;
       atividadesPendentes = Atividade.getAtividadesPendentes();
-      return $.ajax({
-        url: "http://sav.wancharle.com.br/registra_atividades/",
-        type: 'POST',
-        contentType: 'application/json',
-        data: {
-          json: JSON.stringify(atividadesPendentes)
-        },
-        dataType: 'json'
-      }).done(function(data) {
+      return $.post("http://sav.wancharle.com.br/salvar/", {
+        'json': JSON.stringify(atividadesPendentes)
+      }, function() {
+        return console.log('envio ok');
+      }, 'json').done(function(data) {
         if (data === true) {
-          return window.localStorage.removeItem('atividadesPendentes');
+          return Atividade.clearAtividadesPendentes();
         }
       }).fail(function(error, textstatus) {
         alert('Não foi possível enviar os dados registrados ao servidor. Isso ocorre provavelmente por falta de conexão de dados no momento. Tente novamente quando tver um conexão de internet estável');
@@ -179,15 +184,15 @@
       this.storage.setItem('atividade_data', this.ativdata);
       this.storage.setItem('atividade_usuario', this.usuario);
       this.storage.setItem('atividade_horario_inicio', this.horario_inicio);
-      this.storage.setItem('atividade_horario_gps', this.gps);
+      this.storage.setItem('atividade_gps', this.gps);
       this.storage.setItem('atividade_accuracy', this.accuracy);
       return this.storage.setItem('atividade_time', this.time);
     };
 
     Atividade.prototype.finalizar = function() {
-      var n_participantes, n_presentes;
-      n_presentes = $('#txtpresentes').val();
-      n_participantes = $('#txtparticipantes').val();
+      var bestgps, n_participantes, n_presentes;
+      n_presentes = parseInt($('#txtpresentes').val());
+      n_participantes = parseInt($('#txtparticipantes').val());
       if (isInteger(n_presentes) && isInteger(n_participantes)) {
         if (n_presentes < n_participantes) {
           alert("O numero de pessoas presentes deve ser igual ou superior ou número de pessoas participantes da atividade!");
@@ -195,7 +200,12 @@
         }
         this.horario_fim = formatahora(new Date());
         this.storage.setItem('atividade_horario_fim', this.horario_fim);
-        Atividade.armazena('atividade_data', this.usuario, this.tipo, this.ativid, Expediente.gps, this.ativdata, this.horario_inicio, this.horario_fim, n_presentes, n_participantes);
+        if (this.gps !== null && Expediente.accuracy > this.accuracy) {
+          bestgps = this.gps;
+        } else {
+          bestgps = Expediente.gps;
+        }
+        Atividade.armazena('atividade_data', this.usuario, this.tipo, this.ativid, bestgps, this.ativdata, this.horario_inicio, this.horario_fim, n_presentes, n_participantes);
         return $.mobile.changePage('#pgexpediente', {
           changeHash: false
         });
@@ -405,7 +415,10 @@
             }
             return $("#submitButton").removeAttr("disabled");
           };
-        })(this), "json");
+        })(this), "json").fail(function() {
+          $("#submitButton").removeAttr("disabled");
+          return alert('Não foi possivel conectar, verifique sua conexao de dados ou sua rede wifi!');
+        });
       } else {
         $("#submitButton").removeAttr("disabled");
       }
@@ -419,7 +432,7 @@
     App.prototype.atualizaUI = function() {
       var ativ, atividades, atividadesPendentes, html, li, _i, _len;
       atividadesPendentes = Atividade.getAtividadesPendentes();
-      if (atividadesPendentes) {
+      if (atividadesPendentes.length > 0) {
         html = "Histórico de Atividades <span class='ui-li-count'>" + atividadesPendentes.length + "</span>";
         $('#logativrecent').html(html);
         $('#logulop').listview().listview('refresh');
@@ -430,7 +443,11 @@
         for (_i = 0, _len = atividades.length; _i < _len; _i++) {
           ativ = atividades[_i];
           li = "<li>";
-          li += "<h2>" + ativ['id'] + "</h2>";
+          if (ativ['pendente']) {
+            li += '<h2><a href="javascript:Atividade.envia()">' + ativ['id'] + '</a></h2>';
+          } else {
+            li += "<h2>" + ativ['id'] + "</h2>";
+          }
           li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
           li += "<p> " + ativ['data'] + '</p>';
           li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";

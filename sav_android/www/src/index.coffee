@@ -5,6 +5,12 @@ window.zeroPad= (num, places) ->
 window.isInteger = (value)->
     intRegex = /^\d+$/
     return intRegex.test(value)
+
+# fix para console.log em browsers antigos
+if (not window.console)
+    window.console = {log: () ->  }
+
+
 Storage.prototype.setObject = (key, value) ->
         this.setItem(key, JSON.stringify(value))
 
@@ -60,8 +66,10 @@ class window.Atividade
         for ativ in window.localStorage.getObject('atividades')
             if ativ['pendente']
                 ativ['pendente']=false
-            atividades.push(ativ)
+            if ativ['data'] == formatadata(new Date())
+                atividades.push(ativ)
         window.localStorage.setObject('atividades',atividades)
+        app.atualizaUI()
         
     @getAtividadesPendentes: () ->
         atividadesPendentes = new Array()
@@ -76,16 +84,14 @@ class window.Atividade
     @envia: () ->
 
         atividadesPendentes = Atividade.getAtividadesPendentes() 
-        $.ajax({
-            url: "http://sav.wancharle.com.br/registra_atividades/"
-            type: 'POST',
-            contentType: 'application/json',
-            data: { json: JSON.stringify(atividadesPendentes)},
-            dataType: 'json'
-            }
-        ).done((data)->
+        $.post( "http://sav.wancharle.com.br/salvar/", {'json':JSON.stringify(atividadesPendentes)}, 
+            ()-> 
+                console.log('envio ok')
+            ,'json')
+        .done((data)->
             if data == true
-                window.localStorage.removeItem('atividadesPendentes')
+
+                Atividade.clearAtividadesPendentes()
         ).fail((error,textstatus)->
             alert('Não foi possível enviar os dados registrados ao servidor. Isso ocorre provavelmente por falta de conexão de dados no momento. Tente novamente quando tver um conexão de internet estável')
             console.log(textstatus)
@@ -144,13 +150,13 @@ class window.Atividade
         @storage.setItem('atividade_data',@ativdata)
         @storage.setItem('atividade_usuario',@usuario)
         @storage.setItem('atividade_horario_inicio',@horario_inicio)
-        @storage.setItem('atividade_horario_gps',@gps)
+        @storage.setItem('atividade_gps',@gps)
         @storage.setItem('atividade_accuracy',@accuracy)
         @storage.setItem('atividade_time',@time)
 
     finalizar: ()->
-        n_presentes = $('#txtpresentes').val()
-        n_participantes = $('#txtparticipantes').val()
+        n_presentes = parseInt($('#txtpresentes').val())
+        n_participantes = parseInt($('#txtparticipantes').val())
         if isInteger(n_presentes) and isInteger(n_participantes)
             if n_presentes < n_participantes
                 alert("O numero de pessoas presentes deve ser igual ou superior ou número de pessoas participantes da atividade!")
@@ -158,18 +164,23 @@ class window.Atividade
 
             @horario_fim = formatahora(new Date())
             @storage.setItem('atividade_horario_fim',@horario_fim)
+            if @gps != null and Expediente.accuracy > @accuracy
+                bestgps = @gps
+            else
+                bestgps = Expediente.gps
+
 
             Atividade.armazena('atividade_data',
                @usuario,
                @tipo,
                @ativid,
-               Expediente.gps, # TODO:melhorar
+               bestgps, # TODO:melhorar
                @ativdata,
                @horario_inicio,
                @horario_fim,
                n_presentes,
                n_participantes,
-            ) 
+            )
             $.mobile.changePage('#pgexpediente',{changeHash:false})
         else
             alert("Para finalizar a atividade é preciso informar o numero de participantes e presentes")
@@ -347,7 +358,10 @@ class window.App
                     alert("Usuário ou Senha inválidos!")
                 
                 $("#submitButton").removeAttr("disabled")
-            ,"json")
+            ,"json").fail(() ->
+                $("#submitButton").removeAttr("disabled")
+                alert('Não foi possivel conectar, verifique sua conexao de dados ou sua rede wifi!')
+                )
         else
             $("#submitButton").removeAttr("disabled")
         return false
@@ -361,7 +375,7 @@ class window.App
     atualizaUI: ()->
         # atualiza counter na pagina de logado
         atividadesPendentes = Atividade.getAtividadesPendentes()
-        if atividadesPendentes
+        if atividadesPendentes.length > 0
             html = "Histórico de Atividades <span class='ui-li-count'>"+atividadesPendentes.length+"</span>"
             $('#logativrecent').html(html)
             $('#logulop').listview().listview('refresh') 
@@ -375,7 +389,10 @@ class window.App
             html = ""
             for ativ in atividades
                 li = "<li>"
-                li+="<h2>"+ativ['id']+"</h2>"
+                if ativ['pendente']    
+                    li+='<h2><a href="javascript:Atividade.envia()">'+ativ['id']+'</a></h2>'
+                else
+                    li+="<h2>"+ativ['id']+"</h2>"
                 li+="<p> "+ativ['usuario']+ '@(' + ativ['gps']+ ")</p>"
                 li+="<p> "+ativ['data']+ '</p>'
                 li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
