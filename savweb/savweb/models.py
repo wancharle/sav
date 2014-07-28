@@ -9,6 +9,8 @@ class Professor(models.Model):
     user = models.ForeignKey(User)
     telefone = models.CharField(max_length=14)
 
+    def __str__(self):
+        return "{0}".format(self.user.username)
     
 class Atividade(models.Model):
     TIPO_EXPEDIENTE = 'EX'
@@ -28,6 +30,9 @@ class Atividade(models.Model):
     horario_fim = models.TimeField()
 
     gps = models.CharField(max_length=30,help_text=u"Coordenadas do gps no formato <latitude, longitude>. Exemplo: -43.004579, 25.445676" )
+
+    def __str__(self):
+        return "{0}".format(self.identificacao)
 
     def clean(self):
         if self.tipo == Atividade.TIPO_AULA and  (self.numero_de_presentes == 0 or self.numero_de_participantes == 0):
