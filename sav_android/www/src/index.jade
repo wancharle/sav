@@ -91,7 +91,10 @@ html
                 
         div#pghistorico(data-role="page", data-theme="b")
             div(data-role="header")
+                a(href="#" onclick="$.mobile.changePage('#pglogado', {changeHash:false})",data-icon="back",class="ui-btn-left") voltar
                 h1 SAV
+                a(href="javascript:Atividade.envia()",data-icon="mail",class="ui-btn-right") enviar
+
 
             div(role="main", class="ui-content")
                 ul#ulhistorico(data-role="listview",data-filter="true",data-filter-placeholder='Buscar' data-inset="true",data-divider-theme="b")
@@ -118,8 +121,6 @@ html
 
             div(data-role="footer", data-position="fixed")
                 h4 &copy WSQ Informática
-
-
 
         div#pgatividade(data-role="page", data-theme="b")
             div(data-role="header")

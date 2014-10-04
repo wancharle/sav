@@ -81,8 +81,8 @@
       </div>
     </div>
     <div id="pghistorico" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
+      <div data-role="header"><a href="#" onclick="$.mobile.changePage('#pglogado', {changeHash:false})" data-icon="back" class="ui-btn-left">voltar</a>
+        <h1>SAV</h1><a href="javascript:Atividade.envia()" data-icon="mail" class="ui-btn-right">enviar</a>
       </div>
       <div role="main" class="ui-content">
         <ul id="ulhistorico" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-divider-theme="b"></ul>
