@@ -29,6 +29,10 @@
     return value && JSON.parse(value);
   };
 
+  window.str2datePT = function(data) {
+    return Date.parse(data.slice(-4) + "-" + data.slice(3, 5) + "-" + data.slice(0, 2));
+  };
+
   window.formatadata = function(data) {
     return zeroPad(data.getDate(), 2) + "/" + zeroPad(parseInt(data.getMonth()) + 1, 2) + '/' + data.getFullYear();
   };
@@ -332,70 +336,43 @@
 
   })();
 
-  window.App = (function() {
-    function App() {
+  window.UserView = (function() {
+    function UserView() {
       this.submitLogin = __bind(this.submitLogin, this);
       this.storage = window.localStorage;
       this.usuario = this.getUsuario();
-      this.bindEvents();
+      $("#loginForm").on("submit", (function(_this) {
+        return function(e) {
+          return _this.submitLogin(e);
+        };
+      })(this));
     }
 
-    App.prototype.getUsuario = function() {
+    UserView.prototype.getUsuario = function() {
       this.usuario = this.storage.getItem('Usuario');
       return this.usuario;
     };
 
-    App.prototype.setUsuario = function(usuario) {
+    UserView.prototype.setUsuario = function(usuario) {
       this.usuario = usuario;
       return this.storage.setItem('Usuario', this.usuario);
     };
 
-    App.prototype.iniciarExpediente = function() {
-      this.expediente = new Expediente(this.usuario);
-      return $.mobile.changePage("#pgexpediente", {
+    UserView.prototype.clear = function() {
+      $("#username").val("");
+      return $("#password").val("");
+    };
+
+    UserView.prototype.trocarUsuario = function() {
+      this.storage.removeItem('Usuario');
+      this.usuario = null;
+      this.clear();
+      return $.mobile.changePage('#pglogin', {
         changeHash: false
       });
     };
 
-    App.prototype.iniciarAtividade = function() {
-      var identificacao;
-      identificacao = window.prompt('Informe a turma/identificação da atividade');
-      if (identificacao) {
-        this.atividade = new Atividade(Atividade.TIPO_AULA, identificacao);
-        return $.mobile.changePage('#pgatividade', {
-          changeHash: false
-        });
-      }
-    };
-
-    App.prototype.iniciarAlmoço = function() {
-      this.atividade = new Atividade(Atividade.TIPO_ALMOCO);
-      return $.mobile.changePage('#pgalmoco', {
-        changeHash: false
-      });
-    };
-
-    App.prototype.temAtividadesPendentes = function() {
-      return Atividade.estaAberta();
-    };
-
-    App.prototype.trocarUsuario = function() {
-      if (this.temAtividadesPendentes() === true) {
-        return alert("Por algum motivo desconhecido existem registros de atividades não finalizadas. Só é possivel trocar de usuário após finalizar todas as atividades.");
-      } else {
-        this.storage.removeItem('Usuario');
-        this.usuario = null;
-        return $.mobile.changePage('#pglogin', {
-          changeHash: false
-        });
-      }
-    };
-
-    App.prototype.bindEvents = function() {
-      return document.addEventListener('deviceready', this.onDeviceReady, false);
-    };
-
-    App.prototype.submitLogin = function(e) {
+    UserView.prototype.submitLogin = function(e) {
       var p, u, url;
       $("#submitButton").attr("disabled", "disabled");
       u = $("#username").val();
@@ -425,81 +402,14 @@
       return false;
     };
 
-    App.prototype.onDeviceReady = function() {
-      return app.main();
-    };
-
-    App.prototype.atualizaUI = function() {
-      var ativ, atividades, atividadesPendentes, html, li, _i, _len;
-      atividadesPendentes = Atividade.getAtividadesPendentes();
-      if (atividadesPendentes.length > 0) {
-        html = "Histórico de Atividades <span class='ui-li-count'>" + atividadesPendentes.length + "</span>";
-        $('#logativrecent').html(html);
-        $('#logulop').listview().listview('refresh');
-      }
-      atividades = window.localStorage.getObject('atividades');
-      if (atividades) {
-        html = "";
-        for (_i = 0, _len = atividades.length; _i < _len; _i++) {
-          ativ = atividades[_i];
-          li = "<li>";
-          if (ativ['pendente']) {
-            li += '<h2><a href="javascript:Atividade.envia()">' + ativ['id'] + '</a></h2>';
-          } else {
-            li += "<h2>" + ativ['id'] + "</h2>";
-          }
-          li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
-          li += "<p> " + ativ['data'] + '</p>';
-          li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
-          if (ativ['tipo'] === Atividade.TIPO_AULA) {
-            li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
-          }
-          html += li;
-        }
-        $('#ulhistorico').html(html);
-        return $('#ulhistorico').listview().listview('refresh');
-      }
-    };
-
-    App.prototype.mostraHistorico = function() {
-      this.atualizaUI();
-      return $.mobile.changePage("#pghistorico", {
-        changeHash: false
-      });
-    };
-
-    App.prototype.load = function(gps) {
+    UserView.prototype.load = function(gps) {
       if (this.usuario) {
-        this.atualizaUI();
-        if (Expediente.estaAberto()) {
-          this.expediente = new Expediente(this.usuario);
-          if (Atividade.estaAberta()) {
-            this.atividade = new Atividade();
-            if (this.atividade.tipo === Atividade.TIPO_ALMOCO) {
-              return $.mobile.changePage("#pgalmoco", {
-                changeHash: false
-              });
-            } else if (this.atividade.tipo === Atividade.TIPO_AULA) {
-              return $.mobile.changePage("#pgatividade", {
-                changeHash: false
-              });
-            } else if (this.atividade.tipo === Atividade.TIPO_EXPEDIENTE) {
-              return $.mobile.changePage("#pgexpediente", {
-                changeHash: false
-              });
-            } else {
-              return console.log('error: tipo desconhecido de atividade');
-            }
-          } else {
-            return $.mobile.changePage("#pgexpediente", {
-              changeHash: false
-            });
-          }
-        } else {
-          return $.mobile.changePage("#pglogado", {
-            changeHash: false
-          });
-        }
+        this.atividadesview = new Atividades();
+        this.atividadesview.atualizaUI();
+        window.atividadesview = this.atividadesview;
+        return $.mobile.changePage("#pglogado", {
+          changeHash: false
+        });
       } else {
         return $.mobile.changePage("#pglogin", {
           changeHash: false
@@ -507,8 +417,102 @@
       }
     };
 
+    return UserView;
+
+  })();
+
+  window.Atividades = (function() {
+    function Atividades() {}
+
+    Atividades.prototype.atualizaOntem = function(ativ) {
+      var li;
+      li = "<li>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + "</h2><div>";
+      li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
+      li += "<span   style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+      if (ativ['tipo'] === Atividade.TIPO_AULA) {
+        li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
+      }
+      return li + "</div></li>";
+    };
+
+    Atividades.prototype.atualizaHoje = function(ativ) {
+      var li;
+      li = "<li data-role='collapsible' data-iconpos='right' data-inset='false'>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + "</h2><div class='ativ" + ativ.id + "'>";
+      li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
+      li += "<span style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+      li += '<div class="ui-grid-b"> <div class="ui-block-a"><button class="ui-btn" onclick="atividadesview.start(' + ativ.id + ')">iniciar</button></div> <div class="ui-block-b"> </div> <div class="ui-block-c"><button class="ui-btn" onclick="atividadesview.fim(' + ativ.id + ')">finalizar</button></div> </div>';
+      return li + "</div></li>";
+    };
+
+    Atividades.prototype.atualizaAmanha = function(ativ) {
+      var li;
+      li = "<li >";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + "</h2><div>";
+      li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
+      li += "<span  style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+      if (ativ['tipo'] === Atividade.TIPO_AULA) {
+        li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
+      }
+      return li + "</div></li>";
+    };
+
+    Atividades.prototype.atualizaUI = function() {
+      var ativ, atividades, htmlamanha, htmlhoje, htmlontem, now, _i, _len;
+      atividades = window.ativtest;
+      now = str2datePT(formatadata(new Date()));
+      if (atividades) {
+        htmlhoje = "";
+        htmlontem = "";
+        htmlamanha = "";
+        for (_i = 0, _len = atividades.length; _i < _len; _i++) {
+          ativ = atividades[_i];
+          if ((str2datePT(ativ.data) < now) || (ativ.realizada === true)) {
+            htmlontem += this.atualizaOntem(ativ);
+          } else if (str2datePT(ativ.data) === now) {
+            htmlhoje += this.atualizaHoje(ativ);
+          } else {
+            htmlamanha += this.atualizaAmanha(ativ);
+          }
+        }
+        $('#ulhoje').html(htmlhoje);
+        $('#ulontem').html(htmlontem);
+        $('#ulamanha').html(htmlamanha);
+        $('#ulamanha,#ulontem').listview({
+          autodividers: true,
+          autodividersSelector: function(li) {
+            return $(li).find('.data').text();
+          }
+        }).listview('refresh');
+        return $('#ulhoje').listview().listview('refresh');
+      }
+    };
+
+    return Atividades;
+
+  })();
+
+  window.App = (function() {
+    function App() {
+      this.storage = window.localStorage;
+      this.userview = null;
+      this.bindEvents();
+    }
+
+    App.prototype.bindEvents = function() {
+      return document.addEventListener('deviceready', this.onDeviceReady, false);
+    };
+
+    App.prototype.onDeviceReady = function() {
+      return app.main();
+    };
+
     App.prototype.positionSucess = function(gps) {
-      return this.load(gps);
+      return this.userview.load();
     };
 
     App.prototype.positionError = function(error) {
@@ -517,16 +521,89 @@
 
     App.prototype.main = function() {
       console.log('Received Event: onDeviceReady');
-      this.load();
-      return $("#loginForm").on("submit", (function(_this) {
-        return function(e) {
-          return _this.submitLogin(e);
-        };
-      })(this));
+      window.userview = new UserView();
+      return userview.load();
     };
 
     return App;
 
   })();
+
+  window.ativtest = [
+    {
+      id: "1",
+      usuario: "fabricia",
+      realizada: true,
+      data: "10/10/2014",
+      h_inicio: "07:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }, {
+      id: "2",
+      usuario: "fabricia",
+      data: "10/10/2014",
+      h_inicio: "08:00",
+      h_fim: "08:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }, {
+      id: "3",
+      usuario: "fabricia",
+      data: "10/10/2014",
+      h_inicio: "09:00",
+      h_fim: "09:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }, {
+      id: "4",
+      usuario: "fabricia",
+      data: "08/10/2014",
+      h_inicio: "07:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }, {
+      id: "5",
+      usuario: "fabricia",
+      data: "09/10/2014",
+      h_inicio: "08:00",
+      h_fim: "08:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }, {
+      id: "6",
+      usuario: "fabricia",
+      data: "18/10/2014",
+      h_inicio: "09:00",
+      h_fim: "09:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }, {
+      id: "7",
+      usuario: "fabricia",
+      data: "19/10/2014",
+      h_inicio: "07:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }, {
+      id: "8",
+      usuario: "fabricia",
+      data: "19/10/2014",
+      h_inicio: "07:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA,
+      numero_de_participantes: 10,
+      numero_de_presentes: 11
+    }
+  ];
 
 }).call(this);
