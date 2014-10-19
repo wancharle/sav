@@ -208,68 +208,42 @@ class window.Atividade
 
 
 
-class window.Expediente
-    @tipo = "EX"
+class window.GPSControle
     @gps = null 
-    @usuario = null
+    @time = 0
     @accuracy = 1000
+
     @estaAberto: ->
-         expdata = window.localStorage.getItem('expediente_data')
-         if expdata
+         gpsdata = window.localStorage.getItem('gps_data')
+         if gpsdata
             return true
          else
             return false
 
-    constructor: (@usuario) ->
+    constructor: () ->
         @storage = window.localStorage
-        expdata = @load()
-        if not expdata
-            expdata = new Date()
-            @expdata = formatadata(expdata)
-            @horario_inicio = formatahora(expdata)
-            @save()
-        Expediente.accuracy = 1000
+        GPSControle.accuracy = 1000
+        @load()
         @iniciaWatch()
-        
-        Expediente.usuario = @usuario
-
-        $("#expuser").html(@usuario)
-        $("#expdata").html(@expdata + " às "+ @horario_inicio.slice(0,5)+"h")
+        @mostraGPS()
        
-    
+    mostraGPS:()->
+        $("#barrastatus p.gps").html(GPSControle.gps+"<br>("+GPSControle.accuracy+" metros)")
+
     load: ()-> 
-        if Expediente.estaAberto()
-            @expdata = @storage.getItem('expediente_data')
-            @horario_inicio = @storage.getItem('expediente_horario_inicio')
-            Expediente.gps = @storage.getItem('expediente_gps')
-            Expediente.accuracy = @storage.getItem('expediente_accuracy')
-            return @expdata
+        if GPSControle.estaAberto()
+            GPSControle.gps = @storage.getItem('gps_data')
+            GPSControle.accuracy = @storage.getItem('gps_accuracy')
+            GPSControle.time = @storage.getItem('gps_time')
+            @mostraGPS()
+            return true
         else
             return null
 
     save: ()->
-        @storage.setItem('expediente_data',@expdata)
-        @storage.setItem('expediente_horario_inicio',@horario_inicio)
-        @storage.setItem('expediente_gps',Expediente.gps)
-        @storage.setItem('expediente_accuracy',Expediente.accuracy)
-
-    finalizar: ()->
-        @horario_fim = formatahora(new Date())
-        @storage.setItem('expediente_horario_fim',@horario_fim)
-
-        Atividade.armazena('expediente_data',
-           @usuario,
-           Atividade.TIPO_EXPEDIENTE,
-           'Expediente',
-           Expediente.gps,
-           @expdata,
-           @horario_inicio,
-           @horario_fim,
-        )
-        
-        $.mobile.changePage('#pglogado',{changeHash:false})
-        
-
+      @storage.setItem('gps_data',GPSControle.gps)
+      @storage.setItem('gps_time',GPSControle.time)
+      @storage.setItem('gps_accuracy',GPSControle.accuracy)
 
     iniciaWatch: () =>
          @watchid = navigator.geolocation.watchPosition(
@@ -283,10 +257,16 @@ class window.Expediente
             }
          )
     watchSucess: (position) ->
-        if Expediente.accuracy > position.coords.accuracy
-            Expediente.gps = position.coords.latitude+", "+position.coords.longitude   
-            Expediente.accuracy = position.coords.accuracy 
-            console.log("latlong: "+Expediente.gps + " accuracy:"+position.coords.accuracy)
+        $("#barrastatus p.hora").html(formatahora(new Date()).slice(0,5)+"h")
+        timeout = (new Date()).getTime() - GPSControle.time 
+        if (timeout > 600000) or ((GPSControle.accuracy - position.coords.accuracy) > 2)
+            GPSControle.gps = position.coords.latitude+", "+position.coords.longitude
+            GPSControle.accuracy = position.coords.accuracy 
+            GPSControle.time = (new Date()).getTime()
+            console.log("latlong: "+GPSControle.gps + " accuracy:"+position.coords.accuracy)
+            @mostraGPS()
+            @save()
+
 
     watchError: (error) ->
         if error.code == error.PERMISSION_DENIED
@@ -362,50 +342,53 @@ class window.UserView
 class window.Atividades
   atualizaOntem: (ativ) ->
     li = "<li>"
-    li+="<h2 data-inset='false'>"+ativ['h_inicio']+"</h2><div>"
-    li+="<p> "+ativ['usuario']+ '@(' + ativ['gps']+ ")</p>"
-    li+="<span   style='display:none' class='data'> "+ativ['data']+ '</span>'
+    li+="<h2 data-inset='false'>"+ativ['h_inicio']+" - "+ativ['gerencia']+"</h2><div>"
+    li+="<p>Professor: "+ativ['usuario']+"</p>"
+    li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
     li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
     if ativ['tipo'] == Atividade.TIPO_AULA
         li+="<p> Participantes/Presentes: "+ ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>"
+        
+    li+="<p>GPS: " + ativ['gps']+ "</p>"
     return li+"</div></li>"
 
   atualizaHoje: (ativ) ->
-    li = "<li data-role='collapsible' data-iconpos='right' data-inset='false'>"
-    li+="<h2 data-inset='false'>"+ativ['h_inicio']+"</h2><div class='ativ"+ativ.id+"'>"
-    li+="<p> "+ativ['usuario']+ '@(' + ativ['gps']+ ")</p>"
+    li = "<li class='ativ"+ativ.id+"' data-role='collapsible' data-iconpos='right' data-inset='false'>"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio']+' - '+ativ['gerencia']+"</h2>"
     li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
+    li+="<p> Local: "+ativ['local']+"</p>"
     li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
     li+='<div class="ui-grid-b">
-    <div class="ui-block-a"><button class="ui-btn" onclick="atividadesview.start('+ativ.id+')">iniciar</button></div>
+    <div class="ui-block-a"> <button class="ui-btn" onclick="atividadesview.start('+ativ.id+')">iniciar</button></div>
     <div class="ui-block-b"> </div>
-    <div class="ui-block-c"><button class="ui-btn" onclick="atividadesview.fim('+ativ.id+')">finalizar</button></div>
+    <div class="ui-block-c"> <button class="ui-btn" onclick="atividadesview.fim('+ativ.id+')">finalizar</button></div>
 </div>'
-    return li+"</div></li>"
+    li+="</li>"
+    return li
 
 
   atualizaAmanha: (ativ) ->
     li = "<li >"
-    li+="<h2 data-inset='false'>"+ativ['h_inicio']+"</h2><div>"
-    li+="<p> "+ativ['usuario']+ '@(' + ativ['gps']+ ")</p>"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio']+" - "+ativ['gerencia']+"</h2><div>"
+    li+="<p>Professor: "+ativ['usuario']+ "</p>"
     li+="<span  style='display:none' class='data'> "+ativ['data']+ '</span>'
-    li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
-    if ativ['tipo'] == Atividade.TIPO_AULA
-        li+="<p> Participantes/Presentes: "+ ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>"
+    li+="<p>Local: "+ativ['local']+"</p>"
+    li+="<p>De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
+ 
     return li+"</div></li>"
 
   atualizaUI: ()->
       #atividades = window.localStorage.getObject('atividades')
       atividades = window.ativtest
-      now = str2datePT(formatadata(new Date()))
+      hoje = str2datePT(formatadata(new Date()))
       if atividades
           htmlhoje = ""
           htmlontem = ""
           htmlamanha = ""
           for ativ in atividades
-            if (str2datePT(ativ.data)< now) or (ativ.realizada==true)
+            if (str2datePT(ativ.data)< hoje) or (ativ.realizada==true)
               htmlontem += @atualizaOntem(ativ)
-            else if str2datePT(ativ.data) == now
+            else if str2datePT(ativ.data) == hoje
               htmlhoje += @atualizaHoje(ativ)
             else
               htmlamanha += @atualizaAmanha(ativ)
@@ -416,10 +399,16 @@ class window.Atividades
           $('#ulamanha,#ulontem').listview({ 
             autodividers:true,
             autodividersSelector:  ( li ) ->
-                  return $(li).find('.data').text();
+                  return $(li).find('.data').text()
           }).listview('refresh')
 
           $('#ulhoje').listview().listview('refresh')
+          
+          #fix: ao atualizar um collapsible eh necessario chamar sua classe
+          $('div[data-role=collapsible]').collapsible()
+          $('li[data-role=collapsible]').collapsible()
+          #fimfix.
+
       
       
 
@@ -447,14 +436,16 @@ class window.App
         console.log('Received Event: onDeviceReady' )       
         window.userview=new UserView()
         userview.load()
+        window.gpscontrole = new GPSControle()
+
 
 window.ativtest = [
-  { id:"1", usuario:"fabricia",realizada:true, data:"10/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  { id:"2", usuario:"fabricia", data:"10/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  { id:"3", usuario:"fabricia", data:"10/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  { id:"4", usuario:"fabricia", data:"08/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  { id:"5", usuario:"fabricia", data:"09/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  { id:"6", usuario:"fabricia", data:"18/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  { id:"7", usuario:"fabricia", data:"19/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  { id:"8", usuario:"fabricia", data:"19/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"1", usuario:"fabricia",realizada:true, data:"10/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"2", usuario:"fabricia", data:"10/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"3", usuario:"fabricia", data:"10/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"4", usuario:"fabricia", data:"08/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"5", usuario:"fabricia", data:"09/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"6", usuario:"fabricia", data:"19/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"7", usuario:"fabricia", data:"20/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"8", usuario:"fabricia", data:"20/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
   ]

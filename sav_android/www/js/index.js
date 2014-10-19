@@ -231,73 +231,55 @@
 
   })();
 
-  window.Expediente = (function() {
-    Expediente.tipo = "EX";
+  window.GPSControle = (function() {
+    GPSControle.gps = null;
 
-    Expediente.gps = null;
+    GPSControle.time = 0;
 
-    Expediente.usuario = null;
+    GPSControle.accuracy = 1000;
 
-    Expediente.accuracy = 1000;
-
-    Expediente.estaAberto = function() {
-      var expdata;
-      expdata = window.localStorage.getItem('expediente_data');
-      if (expdata) {
+    GPSControle.estaAberto = function() {
+      var gpsdata;
+      gpsdata = window.localStorage.getItem('gps_data');
+      if (gpsdata) {
         return true;
       } else {
         return false;
       }
     };
 
-    function Expediente(usuario) {
-      var expdata;
-      this.usuario = usuario;
+    function GPSControle() {
       this.iniciaWatch = __bind(this.iniciaWatch, this);
       this.storage = window.localStorage;
-      expdata = this.load();
-      if (!expdata) {
-        expdata = new Date();
-        this.expdata = formatadata(expdata);
-        this.horario_inicio = formatahora(expdata);
-        this.save();
-      }
-      Expediente.accuracy = 1000;
+      GPSControle.accuracy = 1000;
+      this.load();
       this.iniciaWatch();
-      Expediente.usuario = this.usuario;
-      $("#expuser").html(this.usuario);
-      $("#expdata").html(this.expdata + " às " + this.horario_inicio.slice(0, 5) + "h");
+      this.mostraGPS();
     }
 
-    Expediente.prototype.load = function() {
-      if (Expediente.estaAberto()) {
-        this.expdata = this.storage.getItem('expediente_data');
-        this.horario_inicio = this.storage.getItem('expediente_horario_inicio');
-        Expediente.gps = this.storage.getItem('expediente_gps');
-        Expediente.accuracy = this.storage.getItem('expediente_accuracy');
-        return this.expdata;
+    GPSControle.prototype.mostraGPS = function() {
+      return $("#barrastatus p.gps").html(GPSControle.gps + "<br>(" + GPSControle.accuracy + " metros)");
+    };
+
+    GPSControle.prototype.load = function() {
+      if (GPSControle.estaAberto()) {
+        GPSControle.gps = this.storage.getItem('gps_data');
+        GPSControle.accuracy = this.storage.getItem('gps_accuracy');
+        GPSControle.time = this.storage.getItem('gps_time');
+        this.mostraGPS();
+        return true;
       } else {
         return null;
       }
     };
 
-    Expediente.prototype.save = function() {
-      this.storage.setItem('expediente_data', this.expdata);
-      this.storage.setItem('expediente_horario_inicio', this.horario_inicio);
-      this.storage.setItem('expediente_gps', Expediente.gps);
-      return this.storage.setItem('expediente_accuracy', Expediente.accuracy);
+    GPSControle.prototype.save = function() {
+      this.storage.setItem('gps_data', GPSControle.gps);
+      this.storage.setItem('gps_time', GPSControle.time);
+      return this.storage.setItem('gps_accuracy', GPSControle.accuracy);
     };
 
-    Expediente.prototype.finalizar = function() {
-      this.horario_fim = formatahora(new Date());
-      this.storage.setItem('expediente_horario_fim', this.horario_fim);
-      Atividade.armazena('expediente_data', this.usuario, Atividade.TIPO_EXPEDIENTE, 'Expediente', Expediente.gps, this.expdata, this.horario_inicio, this.horario_fim);
-      return $.mobile.changePage('#pglogado', {
-        changeHash: false
-      });
-    };
-
-    Expediente.prototype.iniciaWatch = function() {
+    GPSControle.prototype.iniciaWatch = function() {
       return this.watchid = navigator.geolocation.watchPosition((function(_this) {
         return function(position) {
           return _this.watchSucess(position);
@@ -312,15 +294,21 @@
       });
     };
 
-    Expediente.prototype.watchSucess = function(position) {
-      if (Expediente.accuracy > position.coords.accuracy) {
-        Expediente.gps = position.coords.latitude + ", " + position.coords.longitude;
-        Expediente.accuracy = position.coords.accuracy;
-        return console.log("latlong: " + Expediente.gps + " accuracy:" + position.coords.accuracy);
+    GPSControle.prototype.watchSucess = function(position) {
+      var timeout;
+      $("#barrastatus p.hora").html(formatahora(new Date()).slice(0, 5) + "h");
+      timeout = (new Date()).getTime() - GPSControle.time;
+      if ((timeout > 600000) || ((GPSControle.accuracy - position.coords.accuracy) > 2)) {
+        GPSControle.gps = position.coords.latitude + ", " + position.coords.longitude;
+        GPSControle.accuracy = position.coords.accuracy;
+        GPSControle.time = (new Date()).getTime();
+        console.log("latlong: " + GPSControle.gps + " accuracy:" + position.coords.accuracy);
+        this.mostraGPS();
+        return this.save();
       }
     };
 
-    Expediente.prototype.watchError = function(error) {
+    GPSControle.prototype.watchError = function(error) {
       if (error.code === error.PERMISSION_DENIED) {
         alert("Para que o sistema funcione por favor ative o GPS do seu telefone");
       }
@@ -332,7 +320,7 @@
       }
     };
 
-    return Expediente;
+    return GPSControle;
 
   })();
 
@@ -427,53 +415,53 @@
     Atividades.prototype.atualizaOntem = function(ativ) {
       var li;
       li = "<li>";
-      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + "</h2><div>";
-      li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
-      li += "<span   style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + " - " + ativ['gerencia'] + "</h2><div>";
+      li += "<p>Professor: " + ativ['usuario'] + "</p>";
+      li += "<span style='display:none' class='data'> " + ativ['data'] + '</span>';
       li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
       if (ativ['tipo'] === Atividade.TIPO_AULA) {
         li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
       }
+      li += "<p>GPS: " + ativ['gps'] + "</p>";
       return li + "</div></li>";
     };
 
     Atividades.prototype.atualizaHoje = function(ativ) {
       var li;
-      li = "<li data-role='collapsible' data-iconpos='right' data-inset='false'>";
-      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + "</h2><div class='ativ" + ativ.id + "'>";
-      li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
+      li = "<li class='ativ" + ativ.id + "' data-role='collapsible' data-iconpos='right' data-inset='false'>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + ' - ' + ativ['gerencia'] + "</h2>";
       li += "<span style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<p> Local: " + ativ['local'] + "</p>";
       li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
-      li += '<div class="ui-grid-b"> <div class="ui-block-a"><button class="ui-btn" onclick="atividadesview.start(' + ativ.id + ')">iniciar</button></div> <div class="ui-block-b"> </div> <div class="ui-block-c"><button class="ui-btn" onclick="atividadesview.fim(' + ativ.id + ')">finalizar</button></div> </div>';
-      return li + "</div></li>";
+      li += '<div class="ui-grid-b"> <div class="ui-block-a"> <button class="ui-btn" onclick="atividadesview.start(' + ativ.id + ')">iniciar</button></div> <div class="ui-block-b"> </div> <div class="ui-block-c"> <button class="ui-btn" onclick="atividadesview.fim(' + ativ.id + ')">finalizar</button></div> </div>';
+      li += "</li>";
+      return li;
     };
 
     Atividades.prototype.atualizaAmanha = function(ativ) {
       var li;
       li = "<li >";
-      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + "</h2><div>";
-      li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + " - " + ativ['gerencia'] + "</h2><div>";
+      li += "<p>Professor: " + ativ['usuario'] + "</p>";
       li += "<span  style='display:none' class='data'> " + ativ['data'] + '</span>';
-      li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
-      if (ativ['tipo'] === Atividade.TIPO_AULA) {
-        li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
-      }
+      li += "<p>Local: " + ativ['local'] + "</p>";
+      li += "<p>De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
       return li + "</div></li>";
     };
 
     Atividades.prototype.atualizaUI = function() {
-      var ativ, atividades, htmlamanha, htmlhoje, htmlontem, now, _i, _len;
+      var ativ, atividades, hoje, htmlamanha, htmlhoje, htmlontem, _i, _len;
       atividades = window.ativtest;
-      now = str2datePT(formatadata(new Date()));
+      hoje = str2datePT(formatadata(new Date()));
       if (atividades) {
         htmlhoje = "";
         htmlontem = "";
         htmlamanha = "";
         for (_i = 0, _len = atividades.length; _i < _len; _i++) {
           ativ = atividades[_i];
-          if ((str2datePT(ativ.data) < now) || (ativ.realizada === true)) {
+          if ((str2datePT(ativ.data) < hoje) || (ativ.realizada === true)) {
             htmlontem += this.atualizaOntem(ativ);
-          } else if (str2datePT(ativ.data) === now) {
+          } else if (str2datePT(ativ.data) === hoje) {
             htmlhoje += this.atualizaHoje(ativ);
           } else {
             htmlamanha += this.atualizaAmanha(ativ);
@@ -488,7 +476,9 @@
             return $(li).find('.data').text();
           }
         }).listview('refresh');
-        return $('#ulhoje').listview().listview('refresh');
+        $('#ulhoje').listview().listview('refresh');
+        $('div[data-role=collapsible]').collapsible();
+        return $('li[data-role=collapsible]').collapsible();
       }
     };
 
@@ -522,7 +512,8 @@
     App.prototype.main = function() {
       console.log('Received Event: onDeviceReady');
       window.userview = new UserView();
-      return userview.load();
+      userview.load();
+      return window.gpscontrole = new GPSControle();
     };
 
     return App;
@@ -531,6 +522,8 @@
 
   window.ativtest = [
     {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "1",
       usuario: "fabricia",
       realizada: true,
@@ -541,6 +534,8 @@
       numero_de_participantes: 10,
       numero_de_presentes: 11
     }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "2",
       usuario: "fabricia",
       data: "10/10/2014",
@@ -550,6 +545,8 @@
       numero_de_participantes: 10,
       numero_de_presentes: 11
     }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "3",
       usuario: "fabricia",
       data: "10/10/2014",
@@ -559,6 +556,8 @@
       numero_de_participantes: 10,
       numero_de_presentes: 11
     }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "4",
       usuario: "fabricia",
       data: "08/10/2014",
@@ -568,6 +567,8 @@
       numero_de_participantes: 10,
       numero_de_presentes: 11
     }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "5",
       usuario: "fabricia",
       data: "09/10/2014",
@@ -577,27 +578,33 @@
       numero_de_participantes: 10,
       numero_de_presentes: 11
     }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "6",
       usuario: "fabricia",
-      data: "18/10/2014",
+      data: "19/10/2014",
       h_inicio: "09:00",
       h_fim: "09:30",
       tipo: Atividade.TIPO_AULA,
       numero_de_participantes: 10,
       numero_de_presentes: 11
     }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "7",
       usuario: "fabricia",
-      data: "19/10/2014",
+      data: "20/10/2014",
       h_inicio: "07:00",
       h_fim: "07:30",
       tipo: Atividade.TIPO_AULA,
       numero_de_participantes: 10,
       numero_de_presentes: 11
     }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
       id: "8",
       usuario: "fabricia",
-      data: "19/10/2014",
+      data: "20/10/2014",
       h_inicio: "07:00",
       h_fim: "07:30",
       tipo: Atividade.TIPO_AULA,

@@ -12,14 +12,7 @@
     <script src="jquery/jquery.mobile-1.4.3.min.js"></script>
     <title>SAV - Sistema de Acompanhamentos de Visitas</title>
     <style>
-      // .ui-collapsible 
-      //        margin : 0px !important;
-      //        padding-top:0px!important;
-      //        padding-bottom:0px!important;        
-      //
-      //.ui-collapsible-heading{margin:0px!important;}
-      
-      
+      #barrastatus p {text-align:center}
       
     </style>
   </head>
@@ -70,8 +63,12 @@
             <li><a href="#tabamanha" data-ajax="false">Amanhã</a></li>
           </ul>
         </div>
-        <div id="tabhoje" class="ui-body-d ui-content">               
+        <div id="tabhoje" class="ui-content">               
           <ul id="ulhoje" data-role="listview" data-inset="false" data-shadow="false"></ul>
+          <div id="barrastatus"><br>
+            <p class="hora"></p>
+            <p class="gps">-41.0023, -42.0012</p>
+          </div>
         </div>
         <div id="tabontem" class="ui-content">
           <ul id="ulontem" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-shadow="false"></ul>
