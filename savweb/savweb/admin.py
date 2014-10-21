@@ -1,17 +1,24 @@
-#!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
 
 from django import forms
 from django.contrib import admin
 from .models import Professor, Atividade
-
+from .exporta_excel import export_xls 
 
 class AtividadeAdmin(admin.ModelAdmin):
     date_hierarchy = 'data'
-    list_display = ('local','tipo', 'codigo_aula', 'professor', 'data','horario_inicio', 'horario_fim', 'gps', 'numero_de_presentes', 'numero_de_participantes')
+    search_fields = ('local','gerencia','numero_de_presentes', 'numero_de_participantes')
+    list_filter =  ( 'professor','numero_de_presentes')
+    list_display = ('local','gerencia','codigo_aula', 'instrutor', 'data','horario_inicio', 'horario_fim', 'gps', 'numero_de_presentes', 'numero_de_participantes')
     #exclude= ("gps", "horario_fim_registrado","horario_inicio_registrado", "numero_de_presentes","numero_de_participantes")
     fields = ('professor',('tipo','codigo_aula'),'local', 'gerencia', 'data',('horario_inicio','horario_fim'))
+    def instrutor(self,ob):
+        return str(ob.professor)
+    instrutor.short_description="professor"
+
+admin.site.add_action(export_xls, 'Exportar selecionados pro excel')
+
     
 admin.site.register(Professor)
 admin.site.register(Atividade,AtividadeAdmin)
