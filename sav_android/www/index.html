@@ -81,57 +81,6 @@
         <h4>&copy Transforma</h4>
       </div>
     </div>
-    <div id="pgatividade" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Atividade </h3>
-        <p id="ativuser" style="text-align:center">Vitor </p>
-        <p id="ativid" style="text-align:center">id </p>
-        <p id="ativdata" style="text-align:center">02/07/2014 às 09:02:39</p>
-        <p id="ativgps" style="text-align:center">02/07/2014 às 09:02:39</p>
-        <p style="text-align:center">
-          <button onclick="$.mobile.changePage('#pgfimatividade',{changeHash:false})" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Atividade</button>
-        </p>
-      </div>
-      <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
-      </div>
-    </div>
-    <div id="pgfimatividade" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Deseja Finalizar atividade?</h3>
-        <p style="text-align:center">
-          <input name="txtpresentes" id="txtpresentes" step="1" placeholder="nº de presentes" value="" type="number">
-        </p>
-        <p style="text-align:center">
-          <input name="txtparticipantes" id="txtparticipantes" step="1" placeholder="nº de participantes" value="" type="number">
-        </p>
-        <p style="text-align:center">
-          <button onclick="$.mobile.changePage('#pgatividade',{changeHash:false})" class="ui-btn ui-btn-inline ui-corner-all">Não</button>
-          <button onclick="app.atividade.finalizar()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Sim</button>
-        </p>
-      </div>
-    </div>
-    <div id="pgfimalmoco" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Deseja Finalizar o almoço?</h3>
-        <p style="text-align:center">
-          <button onclick="$.mobile.changePage('#pgalmoco',{changeHash:false})" class="ui-btn ui-btn-inline ui-corner-all">Não</button>
-          <button onclick="app.atividade.finalizarAlmoco()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Sim</button>
-        </p>
-      </div>
-      <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
-      </div>
-    </div>
     <script type="text/javascript" src="cordova.js"></script>
     <script type="text/javascript" src="js/index.js"></script>
     <script type="text/javascript">var app = new App();</script>

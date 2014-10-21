@@ -87,61 +87,8 @@ html
     
 
 
-        div#pgatividade(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
-
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Atividade 
-
-
-                p#ativuser(style="text-align:center") Vitor 
-                p#ativid(style="text-align:center") id 
-                p#ativdata(style="text-align:center") 02/07/2014 às 09:02:39
-                p#ativgps(style="text-align:center") 02/07/2014 às 09:02:39
-
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="$.mobile.changePage('#pgfimatividade',{changeHash:false})") Finalizar Atividade
-
-
-            div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
-
-
-        div#pgfimatividade(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
-
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Deseja Finalizar atividade?
-
-                p(style="text-align:center") 
-                    input(name="txtpresentes",id="txtpresentes",step='1',placeholder="nº de presentes",value="",type="number")
-                p(style="text-align:center") 
-                    input(name="txtparticipantes",id="txtparticipantes",step='1',placeholder="nº de participantes",value="",type="number")
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-corner-all(onclick="$.mobile.changePage('#pgatividade',{changeHash:false})") Não
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.atividade.finalizar()") Sim
-
-        div#pgfimalmoco(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
-
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Deseja Finalizar o almoço?
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-corner-all(onclick="$.mobile.changePage('#pgalmoco',{changeHash:false})") Não
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.atividade.finalizarAlmoco()") Sim
-
-
-
-            div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
-
-
+  
+   
 
 
         script(type="text/javascript", src="cordova.js")

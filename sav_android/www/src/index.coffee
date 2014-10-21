@@ -340,12 +340,66 @@ class window.UserView
 
 
 class window.Atividades
+  @tolerancia = 5
+  getAtividades: ()->
+    return window.localStorage.getObject('lista_de_atividades')
+
+  setAtividades:(atividades)->
+    window.localStorage.setObject('lista_de_atividades',atividades)
+
+  fim: (id)->
+    n_presentes = parseInt($('#txtpresentes'+id).val())
+    n_participantes = parseInt($('#txtparticipantes'+id).val())
+    if isInteger(n_presentes) and isInteger(n_participantes)
+      if n_presentes < n_participantes
+          alert("O número de pessoas presentes deve ser igual ou superior ou número de pessoas participantes da atividade!")
+          return
+
+      horario_fim = formatahora(new Date())
+
+      ativs = @getAtividades()
+      for ativ, i in ativs
+        if parseInt(ativ.id) == parseInt(id)
+          if ativ.h_inicio_registrado
+            ativ.h_fim_registrado = horario_fim
+            ativ.gps = GPSControle.gps
+            ativ.numero_de_presentes = n_presentes
+            ativ.numero_de_participantes = n_participantes
+            ativ.realizada=true
+          else
+            alert("É preciso iniciar a atividade antes de finalizar!")
+      @setAtividades(ativs)
+      atividadesview.atualizaUI()
+    else
+      alert("Para finalizar a atividade é preciso informar o número de participantes e presentes")
+
+
+  start:(id)->
+    ativs = @getAtividades()
+    for ativ, i in ativs
+      if parseInt(ativ.id) == parseInt(id)
+        horario_inicio = formatahora(new Date())
+        d = new Date()
+        d.setMinutes(d.getMinutes()+Atividades.tolerancia)
+        limite_inicio = formatahora(d)
+        if limite_inicio > ativ.h_inicio
+          ativ['h_inicio_registrado'] = horario_inicio
+          $('li.ativ'+id+ ' button.ui-btn.start').hide()
+          $('li.ativ'+id+ ' p.h_inicio_registrado').show()
+          $('li.ativ'+id+ ' p.h_inicio_registrado').html('Iniciou as '+horario_inicio.slice(0,5)+'h')
+        else
+          alert("Vc não pode iniciar esta atividade ainda!")
+        
+    @setAtividades(ativs) 
   atualizaOntem: (ativ) ->
     li = "<li>"
     li+="<h2 data-inset='false'>"+ativ['h_inicio']+" - "+ativ['gerencia']+"</h2><div>"
     li+="<p>Professor: "+ativ['usuario']+"</p>"
     li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
-    li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
+    if ativ.realizada
+      li+="<p>Realizada de "+ativ['h_inicio_registrado'].slice(0,5)+"h às "+ativ['h_fim_registrado'].slice(0,5)+"h</p>"
+    else
+      li+="<p>De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
     if ativ['tipo'] == Atividade.TIPO_AULA
         li+="<p> Participantes/Presentes: "+ ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>"
         
@@ -358,8 +412,22 @@ class window.Atividades
     li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
     li+="<p> Local: "+ativ['local']+"</p>"
     li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
+    li+='<div data-role="fieldcontain">
+      <label for="txtpresentes'+ativ.id+'">Presentes:</label>
+      <input name="txtpresentes'+ativ.id+'" class="numero" id="txtpresentes'+ativ.id+'" step="1"  value="'+ativ.numero_de_presentes+'" type="number"/>
+      </div>'
+    li+='<div data-role="fieldcontain">
+      <label for="txtparticipantes'+ativ.id+'">Participantes:</label>
+      <input name="txtparticipantes'+ativ.id+'" class="numero" id="txtparticipantes'+ativ.id+'" step="1"  value="'+ativ.numero_de_participantes+'" type="number"/>
+      </div>'
+      
     li+='<div class="ui-grid-b">
-    <div class="ui-block-a"> <button class="ui-btn" onclick="atividadesview.start('+ativ.id+')">iniciar</button></div>
+    <div class="ui-block-a">'
+    if ativ.h_inicio_registrado
+      li+='<p class="h_inicio_registrado">Iniciou as '+ativ.h_inicio_registrado.slice(0,5)+ 'h</p>'
+    else
+      li+='<button class="ui-btn start" onclick="atividadesview.start('+ativ.id+')">iniciar</button><p style="display:none" class="h_inicio_registrado"></p>'
+    li+='</div>
     <div class="ui-block-b"> </div>
     <div class="ui-block-c"> <button class="ui-btn" onclick="atividadesview.fim('+ativ.id+')">finalizar</button></div>
 </div>'
@@ -378,8 +446,7 @@ class window.Atividades
     return li+"</div></li>"
 
   atualizaUI: ()->
-      #atividades = window.localStorage.getObject('atividades')
-      atividades = window.ativtest
+      atividades = @getAtividades()
       hoje = str2datePT(formatadata(new Date()))
       if atividades
           htmlhoje = ""
@@ -407,6 +474,8 @@ class window.Atividades
           #fix: ao atualizar um collapsible eh necessario chamar sua classe
           $('div[data-role=collapsible]').collapsible()
           $('li[data-role=collapsible]').collapsible()
+          $('input.numero').textinput()
+          $('input.numero').textinput('refresh')
           #fimfix.
 
       
@@ -440,12 +509,14 @@ class window.App
 
 
 window.ativtest = [
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"1", usuario:"fabricia",realizada:true, data:"10/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"2", usuario:"fabricia", data:"10/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"3", usuario:"fabricia", data:"10/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"4", usuario:"fabricia", data:"08/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"5", usuario:"fabricia", data:"09/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"6", usuario:"fabricia", data:"19/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"7", usuario:"fabricia", data:"20/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"8", usuario:"fabricia", data:"20/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA, numero_de_participantes: 10, numero_de_presentes:11 },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"1", usuario:"fabricia", data:"20/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"2", usuario:"fabricia", data:"20/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"3", usuario:"fabricia", data:"20/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"4", usuario:"fabricia", data:"22/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"5", usuario:"fabricia", data:"22/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"6", usuario:"fabricia", data:"19/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"7", usuario:"fabricia", data:"21/10/2014", h_inicio: "20:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"8", usuario:"fabricia", data:"21/10/2014", h_inicio: "21:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
   ]
+
+window.localStorage.setObject('lista_de_atividades',window.ativtest);
