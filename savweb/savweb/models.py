@@ -23,9 +23,9 @@ class Atividade(models.Model):
     local = models.CharField(max_length=150)
     professor = models.ForeignKey(Professor)
     gerencia = models.CharField(max_length=100, verbose_name=u"gerência")
-    numero_de_presentes = models.IntegerField(default=0,null=True,blank=True)
-    numero_de_participantes = models.IntegerField(default=0,null=True, blank=True)
-
+    numero_de_presentes = models.IntegerField(default=0,null=True,blank=True,verbose_name="presentes")
+    numero_de_participantes = models.IntegerField(default=0,null=True, blank=True,verbose_name="participantes")
+    realizada = models.BooleanField(default=False)
     data = models.DateField()
     horario_inicio = models.TimeField(verbose_name=u"horário início")
     horario_inicio_registrado = models.TimeField(null=True,blank=True)

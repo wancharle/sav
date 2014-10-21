@@ -24,26 +24,40 @@ def logar(request):
 @csrf_exempt
 @transaction.atomic
 def salvar(request):
+
+    # sincroniza atividades do telefone
     json_s = request.POST['json']
     json_obj = json.loads(json_s)
     for o in json_obj:
-        if not o['usuario'].startswith('null'):
-            p = Professor.objects.get(user__username=o['usuario'])
-            a, created= Atividade.objects.get_or_create(professor=p, 
-            tipo = o['tipo'],
-            identificacao = o['id'],
-            numero_de_presentes = int(o.get('numero_de_presentes',0)),
-            numero_de_participantes = int(o.get('numero_de_participantes',0)),
-            data = datetime.datetime.strptime(o.get('data'),'%d/%m/%Y'),
-            horario_inicio= datetime.datetime.strptime(o.get('h_inicio'),'%H:%M:%S'),
-            horario_fim= datetime.datetime.strptime(o.get('h_inicio'),'%H:%M:%S'),
-            gps= o.get('gps','null')
-            )
-            a.save()
+        if o.get('realizada',False):
+            id = int(o.get('id'))
+            ativ = Atividade.objects.get(pk=id)
+            ativ.realizada = True
+            ativ.numero_de_presentes = int(o.get('numero_de_presentes',0))
+            ativ.numero_de_participantes = int(o.get('numero_de_participantes',0))
+            ativ.horario_inicio_registrado= datetime.datetime.strptime(o.get('h_inicio_registrado'),'%H:%M:%S')
+            ativ.horario_fim_registrado= datetime.datetime.strptime(o.get('h_fim_registrado'),'%H:%M:%S')
+            ativ.gps= o.get('gps','null')
+            ativ.save()
 
-            
+    # carrega atinumero_de_presentesvidades pendentes do usuario
+    p = Professor.objects.get(user__username=request.POST['usuario'])
+    atividadesPendentes = p.atividade_set.filter(realizada=False).filter(data__gte=datetime.datetime.now().date())
+    obj = []
+    for a in atividadesPendentes:
+        o = {}
+        o['gerencia'] = a.gerencia
+        o['tipo'] =a.tipo
+        o['local']= a.local
+        o['id']= a.id
+        o['data']= a.data.strftime("%d/%m/%Y")
+        o['usuario']= a.professor.user.username
+        o['h_inicio']= a.horario_inicio.strftime("%H:%M:%S")
+        o['h_fim']= a.horario_fim.strftime("%H:%M:%S")
+        obj.append(o)
 
-    return HttpResponse(json.dumps(True), content_type='application/json')
+    #obj = [ {'gerencia':"RBC/ENE/JS", 'local':"EDMA", 'id':"1", 'usuario':"fabricia", 'data':"21/10/2014", 'h_inicio': "03:08:00", 'h_fim': "07:30:00", 'tipo': 'A' }]
+    return HttpResponse(json.dumps(obj), content_type='application/json')
 
 @csrf_exempt
 def acompanhamento(request):
