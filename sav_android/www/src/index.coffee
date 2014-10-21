@@ -1,7 +1,8 @@
+# vim: set ts=2 sw=2 sts=2 expandtab:
 
 window.zeroPad= (num, places) ->
-    zero = places - num.toString().length + 1;
-    return Array(+(zero > 0 && zero)).join("0") + num;
+    zero = places - num.toString().length + 1
+    return Array(+(zero > 0 && zero)).join("0") + num
 window.isInteger = (value)->
     intRegex = /^\d+$/
     return intRegex.test(value)
@@ -10,7 +11,7 @@ window.isInteger = (value)->
 if (not window.console)
     window.console = {log: () ->  }
 
-
+  
 Storage.prototype.setObject = (key, value) ->
         this.setItem(key, JSON.stringify(value))
 
@@ -18,6 +19,9 @@ Storage.prototype.setObject = (key, value) ->
 Storage.prototype.getObject = (key) ->
         value = this.getItem(key)
         return value and JSON.parse(value)
+
+window.str2datePT = (data)->
+    return Date.parse(data.slice(-4)+"-"+data.slice(3,5)+"-"+data.slice(0,2))
 
 window.formatadata = (data) ->
     return zeroPad(data.getDate(),2)+"/"+zeroPad(parseInt(data.getMonth())+1,2)+'/'+data.getFullYear()
@@ -204,68 +208,42 @@ class window.Atividade
 
 
 
-class window.Expediente
-    @tipo = "EX"
+class window.GPSControle
     @gps = null 
-    @usuario = null
+    @time = 0
     @accuracy = 1000
+
     @estaAberto: ->
-         expdata = window.localStorage.getItem('expediente_data')
-         if expdata
+         gpsdata = window.localStorage.getItem('gps_data')
+         if gpsdata
             return true
          else
             return false
 
-    constructor: (@usuario) ->
+    constructor: () ->
         @storage = window.localStorage
-        expdata = @load()
-        if not expdata
-            expdata = new Date()
-            @expdata = formatadata(expdata)
-            @horario_inicio = formatahora(expdata)
-            @save()
-        Expediente.accuracy = 1000
+        GPSControle.accuracy = 1000
+        @load()
         @iniciaWatch()
-        
-        Expediente.usuario = @usuario
-
-        $("#expuser").html(@usuario)
-        $("#expdata").html(@expdata + " às "+ @horario_inicio.slice(0,5)+"h")
+        @mostraGPS()
        
-    
+    mostraGPS:()->
+        $("#barrastatus p.gps").html(GPSControle.gps+"<br>("+GPSControle.accuracy+" metros)")
+
     load: ()-> 
-        if Expediente.estaAberto()
-            @expdata = @storage.getItem('expediente_data')
-            @horario_inicio = @storage.getItem('expediente_horario_inicio')
-            Expediente.gps = @storage.getItem('expediente_gps')
-            Expediente.accuracy = @storage.getItem('expediente_accuracy')
-            return @expdata
+        if GPSControle.estaAberto()
+            GPSControle.gps = @storage.getItem('gps_data')
+            GPSControle.accuracy = @storage.getItem('gps_accuracy')
+            GPSControle.time = @storage.getItem('gps_time')
+            @mostraGPS()
+            return true
         else
             return null
 
     save: ()->
-        @storage.setItem('expediente_data',@expdata)
-        @storage.setItem('expediente_horario_inicio',@horario_inicio)
-        @storage.setItem('expediente_gps',Expediente.gps)
-        @storage.setItem('expediente_accuracy',Expediente.accuracy)
-
-    finalizar: ()->
-        @horario_fim = formatahora(new Date())
-        @storage.setItem('expediente_horario_fim',@horario_fim)
-
-        Atividade.armazena('expediente_data',
-           @usuario,
-           Atividade.TIPO_EXPEDIENTE,
-           'Expediente',
-           Expediente.gps,
-           @expdata,
-           @horario_inicio,
-           @horario_fim,
-        )
-        
-        $.mobile.changePage('#pglogado',{changeHash:false})
-        
-
+      @storage.setItem('gps_data',GPSControle.gps)
+      @storage.setItem('gps_time',GPSControle.time)
+      @storage.setItem('gps_accuracy',GPSControle.accuracy)
 
     iniciaWatch: () =>
          @watchid = navigator.geolocation.watchPosition(
@@ -279,10 +257,16 @@ class window.Expediente
             }
          )
     watchSucess: (position) ->
-        if Expediente.accuracy > position.coords.accuracy
-            Expediente.gps = position.coords.latitude+", "+position.coords.longitude   
-            Expediente.accuracy = position.coords.accuracy 
-            console.log("latlong: "+Expediente.gps + " accuracy:"+position.coords.accuracy)
+        $("#barrastatus p.hora").html(formatahora(new Date()).slice(0,5)+"h")
+        timeout = (new Date()).getTime() - GPSControle.time 
+        if (timeout > 600000) or ((GPSControle.accuracy - position.coords.accuracy) > 2)
+            GPSControle.gps = position.coords.latitude+", "+position.coords.longitude
+            GPSControle.accuracy = position.coords.accuracy 
+            GPSControle.time = (new Date()).getTime()
+            console.log("latlong: "+GPSControle.gps + " accuracy:"+position.coords.accuracy)
+            @mostraGPS()
+            @save()
+
 
     watchError: (error) ->
         if error.code == error.PERMISSION_DENIED
@@ -294,151 +278,245 @@ class window.Expediente
         if error.code == error.TIMEOUT
            console.log('timeout gps: ' + error.message)
 
+class window.UserView
+  constructor: ->
+    @storage = window.localStorage
+    @usuario = this.getUsuario()
+    $("#loginForm").on("submit", (e) => @submitLogin(e) )
+
+  getUsuario: () ->
+    @usuario = @storage.getItem('Usuario')
+    return @usuario
+  
+  setUsuario: (usuario)->
+    @usuario =  usuario
+    @storage.setItem('Usuario',@usuario)
+  
+  clear: () ->
+    $("#username").val("")
+    $("#password").val("")
+
+  trocarUsuario: () ->
+    @storage.removeItem('Usuario')
+    @usuario = null
+    @clear()
+    $.mobile.changePage('#pglogin',{changeHash:false})
+
+  submitLogin: (e) =>
+    #disable the button so we can't resubmit while we wait
+    $("#submitButton").attr("disabled","disabled")
+    u = $("#username").val()
+    p = $("#password").val()
+    if (u and  p)
+      url = "http://sav.wancharle.com.br/logar/"
+      $.post(url, {username:u,password:p}, (res) =>
+            
+        if(res == true)
+          @setUsuario u
+          @load()
+        else
+          alert("Usuário ou Senha inválidos!")
+        
+        $("#submitButton").removeAttr("disabled")
+
+      ,"json").fail(() ->
+         $("#submitButton").removeAttr("disabled")
+         alert('Não foi possivel conectar, verifique sua conexao de dados ou sua rede wifi!')
+
+        )
+    else
+        $("#submitButton").removeAttr("disabled")
+    return false
+
+  load: (gps) ->
+    if @usuario 
+      @atividadesview = new Atividades()
+      @atividadesview.atualizaUI()
+      window.atividadesview = @atividadesview
+
+      $.mobile.changePage("#pglogado",{changeHash:false})                    
+    else
+      $.mobile.changePage("#pglogin",{changeHash:false})
+
+
+class window.Atividades
+  @tolerancia = 5
+  getAtividades: ()->
+    return window.localStorage.getObject('lista_de_atividades')
+
+  setAtividades:(atividades)->
+    window.localStorage.setObject('lista_de_atividades',atividades)
+
+  fim: (id)->
+    n_presentes = parseInt($('#txtpresentes'+id).val())
+    n_participantes = parseInt($('#txtparticipantes'+id).val())
+    if isInteger(n_presentes) and isInteger(n_participantes)
+      if n_presentes < n_participantes
+          alert("O número de pessoas presentes deve ser igual ou superior ou número de pessoas participantes da atividade!")
+          return
+
+      horario_fim = formatahora(new Date())
+
+      ativs = @getAtividades()
+      for ativ, i in ativs
+        if parseInt(ativ.id) == parseInt(id)
+          if ativ.h_inicio_registrado
+            ativ.h_fim_registrado = horario_fim
+            ativ.gps = GPSControle.gps
+            ativ.numero_de_presentes = n_presentes
+            ativ.numero_de_participantes = n_participantes
+            ativ.realizada=true
+          else
+            alert("É preciso iniciar a atividade antes de finalizar!")
+      @setAtividades(ativs)
+      atividadesview.atualizaUI()
+    else
+      alert("Para finalizar a atividade é preciso informar o número de participantes e presentes")
+
+
+  start:(id)->
+    ativs = @getAtividades()
+    for ativ, i in ativs
+      if parseInt(ativ.id) == parseInt(id)
+        horario_inicio = formatahora(new Date())
+        d = new Date()
+        d.setMinutes(d.getMinutes()+Atividades.tolerancia)
+        limite_inicio = formatahora(d)
+        if limite_inicio > ativ.h_inicio
+          ativ['h_inicio_registrado'] = horario_inicio
+          $('li.ativ'+id+ ' button.ui-btn.start').hide()
+          $('li.ativ'+id+ ' p.h_inicio_registrado').show()
+          $('li.ativ'+id+ ' p.h_inicio_registrado').html('Iniciou as '+horario_inicio.slice(0,5)+'h')
+        else
+          alert("Vc não pode iniciar esta atividade ainda!")
+        
+    @setAtividades(ativs) 
+  atualizaOntem: (ativ) ->
+    li = "<li>"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio']+" - "+ativ['gerencia']+"</h2><div>"
+    li+="<p>Professor: "+ativ['usuario']+"</p>"
+    li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
+    if ativ.realizada
+      li+="<p>Realizada de "+ativ['h_inicio_registrado'].slice(0,5)+"h às "+ativ['h_fim_registrado'].slice(0,5)+"h</p>"
+    else
+      li+="<p>De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
+    if ativ['tipo'] == Atividade.TIPO_AULA
+        li+="<p> Participantes/Presentes: "+ ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>"
+        
+    li+="<p>GPS: " + ativ['gps']+ "</p>"
+    return li+"</div></li>"
+
+  atualizaHoje: (ativ) ->
+    li = "<li class='ativ"+ativ.id+"' data-role='collapsible' data-iconpos='right' data-inset='false'>"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio']+' - '+ativ['gerencia']+"</h2>"
+    li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
+    li+="<p> Local: "+ativ['local']+"</p>"
+    li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
+    li+='<div data-role="fieldcontain">
+      <label for="txtpresentes'+ativ.id+'">Presentes:</label>
+      <input name="txtpresentes'+ativ.id+'" class="numero" id="txtpresentes'+ativ.id+'" step="1"  value="'+ativ.numero_de_presentes+'" type="number"/>
+      </div>'
+    li+='<div data-role="fieldcontain">
+      <label for="txtparticipantes'+ativ.id+'">Participantes:</label>
+      <input name="txtparticipantes'+ativ.id+'" class="numero" id="txtparticipantes'+ativ.id+'" step="1"  value="'+ativ.numero_de_participantes+'" type="number"/>
+      </div>'
+      
+    li+='<div class="ui-grid-b">
+    <div class="ui-block-a">'
+    if ativ.h_inicio_registrado
+      li+='<p class="h_inicio_registrado">Iniciou as '+ativ.h_inicio_registrado.slice(0,5)+ 'h</p>'
+    else
+      li+='<button class="ui-btn start" onclick="atividadesview.start('+ativ.id+')">iniciar</button><p style="display:none" class="h_inicio_registrado"></p>'
+    li+='</div>
+    <div class="ui-block-b"> </div>
+    <div class="ui-block-c"> <button class="ui-btn" onclick="atividadesview.fim('+ativ.id+')">finalizar</button></div>
+</div>'
+    li+="</li>"
+    return li
+
+
+  atualizaAmanha: (ativ) ->
+    li = "<li >"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio']+" - "+ativ['gerencia']+"</h2><div>"
+    li+="<p>Professor: "+ativ['usuario']+ "</p>"
+    li+="<span  style='display:none' class='data'> "+ativ['data']+ '</span>'
+    li+="<p>Local: "+ativ['local']+"</p>"
+    li+="<p>De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
+ 
+    return li+"</div></li>"
+
+  atualizaUI: ()->
+      atividades = @getAtividades()
+      hoje = str2datePT(formatadata(new Date()))
+      if atividades
+          htmlhoje = ""
+          htmlontem = ""
+          htmlamanha = ""
+          for ativ in atividades
+            if (str2datePT(ativ.data)< hoje) or (ativ.realizada==true)
+              htmlontem += @atualizaOntem(ativ)
+            else if str2datePT(ativ.data) == hoje
+              htmlhoje += @atualizaHoje(ativ)
+            else
+              htmlamanha += @atualizaAmanha(ativ)
+
+          $('#ulhoje').html(htmlhoje)
+          $('#ulontem').html(htmlontem)
+          $('#ulamanha').html(htmlamanha)
+          $('#ulamanha,#ulontem').listview({ 
+            autodividers:true,
+            autodividersSelector:  ( li ) ->
+                  return $(li).find('.data').text()
+          }).listview('refresh')
+
+          $('#ulhoje').listview().listview('refresh')
+          
+          #fix: ao atualizar um collapsible eh necessario chamar sua classe
+          $('div[data-role=collapsible]').collapsible()
+          $('li[data-role=collapsible]').collapsible()
+          $('input.numero').textinput()
+          $('input.numero').textinput('refresh')
+          #fimfix.
+
+      
+      
+
 class window.App
     # Application Constructor
     constructor: () ->
         @storage = window.localStorage
-        @usuario = this.getUsuario()
+        @userview = null
         this.bindEvents()
-  
-    getUsuario: () ->
-        @usuario = @storage.getItem('Usuario')
-        return @usuario
-    
-    setUsuario: (usuario)->
-        @usuario =  usuario
-        @storage.setItem('Usuario',@usuario)
-
-    iniciarExpediente: () ->
-        @expediente = new Expediente(@usuario)
-        $.mobile.changePage("#pgexpediente",{changeHash:false})
-
-    iniciarAtividade: () ->
-        identificacao = window.prompt('Informe a turma/identificação da atividade')
-        if identificacao
-            @atividade = new Atividade(Atividade.TIPO_AULA, identificacao)
-            $.mobile.changePage('#pgatividade',{changeHash:false})
-
-    iniciarAlmoço: () ->
-        @atividade = new Atividade(Atividade.TIPO_ALMOCO)
-        $.mobile.changePage('#pgalmoco',{changeHash:false})
-
-
-    temAtividadesPendentes: () ->
-        return Atividade.estaAberta()
-
-    trocarUsuario: () ->
-        if @temAtividadesPendentes() == true
-           alert("Por algum motivo desconhecido existem registros de atividades não finalizadas. Só é possivel trocar de usuário após finalizar todas as atividades.")
-        else
-            @storage.removeItem('Usuario')
-            @usuario = null
-            $.mobile.changePage('#pglogin',{changeHash:false})
-           
-    # Bind any events that are required on startup. Common events are:
-    # 'load', 'deviceready', 'offline', and 'online'.
+          
     bindEvents: () ->
         document.addEventListener('deviceready', this.onDeviceReady, false)
 
-    # The scope of 'this' is the event. In order to call the 'receivedEvent'
-    # function, we must explicitly call 'app.receivedEvent(...);'
-    submitLogin: (e) =>
-        #disable the button so we can't resubmit while we wait
-        $("#submitButton").attr("disabled","disabled")
-        u = $("#username").val()
-        p = $("#password").val()
-        if(u and  p )
-            url = "http://sav.wancharle.com.br/logar/"
-            $.post(url, {username:u,password:p}, (res) =>
-                    
-                if(res == true)
-                    @setUsuario u
-                    @load()
-                else
-                    alert("Usuário ou Senha inválidos!")
-                
-                $("#submitButton").removeAttr("disabled")
-            ,"json").fail(() ->
-                $("#submitButton").removeAttr("disabled")
-                alert('Não foi possivel conectar, verifique sua conexao de dados ou sua rede wifi!')
-                )
-        else
-            $("#submitButton").removeAttr("disabled")
-        return false
-
-
+    
     onDeviceReady: () ->
         app.main()
-        
-            
-    # Update DOM on a Received Event
-    atualizaUI: ()->
-        # atualiza counter na pagina de logado
-        atividadesPendentes = Atividade.getAtividadesPendentes()
-        if atividadesPendentes.length > 0
-            html = "Histórico de Atividades <span class='ui-li-count'>"+atividadesPendentes.length+"</span>"
-            $('#logativrecent').html(html)
-            $('#logulop').listview().listview('refresh') 
-
-        # atualiza counter na pagina de expediente
-        # ...
-        
-        # atualiza pagina de historico
-        atividades = window.localStorage.getObject('atividades')
-        if atividades
-            html = ""
-            for ativ in atividades
-                li = "<li>"
-                if ativ['pendente']    
-                    li+='<h2><a href="javascript:Atividade.envia()">'+ativ['id']+'</a></h2>'
-                else
-                    li+="<h2>"+ativ['id']+"</h2>"
-                li+="<p> "+ativ['usuario']+ '@(' + ativ['gps']+ ")</p>"
-                li+="<p> "+ativ['data']+ '</p>'
-                li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
-                if ativ['tipo'] == Atividade.TIPO_AULA
-                    li+="<p> Participantes/Presentes: "+ ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>"
-
-                html+=li
-            $('#ulhistorico').html(html)
-            $('#ulhistorico').listview().listview('refresh')
                
-               
-
-    mostraHistorico: () ->
-        @atualizaUI()
-        $.mobile.changePage("#pghistorico",{changeHash:false})
-
-    load: (gps) ->
-        if @usuario 
-            @atualizaUI()
-            if Expediente.estaAberto()
-                @expediente = new Expediente(@usuario)
-                if Atividade.estaAberta()
-                    @atividade = new Atividade()
-                    if @atividade.tipo == Atividade.TIPO_ALMOCO
-                        $.mobile.changePage("#pgalmoco",{changeHash:false})
-                    else if @atividade.tipo == Atividade.TIPO_AULA
-                        $.mobile.changePage("#pgatividade",{changeHash:false})
-                    else if @atividade.tipo == Atividade.TIPO_EXPEDIENTE
-                        $.mobile.changePage("#pgexpediente",{changeHash:false})
-                    else
-                        console.log('error: tipo desconhecido de atividade')
-                else
-                    $.mobile.changePage("#pgexpediente",{changeHash:false})
-            else
-                $.mobile.changePage("#pglogado",{changeHash:false})
-        else
-            $.mobile.changePage("#pglogin",{changeHash:false})
-
     positionSucess: (gps) ->
-        @load(gps)
+        @userview.load()
 
     positionError: (error) ->
         alert('Não foi possível obter sua localização. Verifique as configurações do seu smartphone.') 
 
     main: () ->
-        console.log('Received Event: onDeviceReady' )
-        @load()
-        $("#loginForm").on("submit", (e) => @submitLogin(e) )
-      
+        console.log('Received Event: onDeviceReady' )       
+        window.userview=new UserView()
+        userview.load()
+        window.gpscontrole = new GPSControle()
+
+
+window.ativtest = [
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"1", usuario:"fabricia", data:"20/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"2", usuario:"fabricia", data:"20/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"3", usuario:"fabricia", data:"20/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"4", usuario:"fabricia", data:"22/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"5", usuario:"fabricia", data:"22/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"6", usuario:"fabricia", data:"19/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"7", usuario:"fabricia", data:"21/10/2014", h_inicio: "20:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"8", usuario:"fabricia", data:"21/10/2014", h_inicio: "21:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  ]
+
+window.localStorage.setObject('lista_de_atividades',window.ativtest);

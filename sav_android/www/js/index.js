@@ -29,6 +29,10 @@
     return value && JSON.parse(value);
   };
 
+  window.str2datePT = function(data) {
+    return Date.parse(data.slice(-4) + "-" + data.slice(3, 5) + "-" + data.slice(0, 2));
+  };
+
   window.formatadata = function(data) {
     return zeroPad(data.getDate(), 2) + "/" + zeroPad(parseInt(data.getMonth()) + 1, 2) + '/' + data.getFullYear();
   };
@@ -227,73 +231,55 @@
 
   })();
 
-  window.Expediente = (function() {
-    Expediente.tipo = "EX";
+  window.GPSControle = (function() {
+    GPSControle.gps = null;
 
-    Expediente.gps = null;
+    GPSControle.time = 0;
 
-    Expediente.usuario = null;
+    GPSControle.accuracy = 1000;
 
-    Expediente.accuracy = 1000;
-
-    Expediente.estaAberto = function() {
-      var expdata;
-      expdata = window.localStorage.getItem('expediente_data');
-      if (expdata) {
+    GPSControle.estaAberto = function() {
+      var gpsdata;
+      gpsdata = window.localStorage.getItem('gps_data');
+      if (gpsdata) {
         return true;
       } else {
         return false;
       }
     };
 
-    function Expediente(usuario) {
-      var expdata;
-      this.usuario = usuario;
+    function GPSControle() {
       this.iniciaWatch = __bind(this.iniciaWatch, this);
       this.storage = window.localStorage;
-      expdata = this.load();
-      if (!expdata) {
-        expdata = new Date();
-        this.expdata = formatadata(expdata);
-        this.horario_inicio = formatahora(expdata);
-        this.save();
-      }
-      Expediente.accuracy = 1000;
+      GPSControle.accuracy = 1000;
+      this.load();
       this.iniciaWatch();
-      Expediente.usuario = this.usuario;
-      $("#expuser").html(this.usuario);
-      $("#expdata").html(this.expdata + " às " + this.horario_inicio.slice(0, 5) + "h");
+      this.mostraGPS();
     }
 
-    Expediente.prototype.load = function() {
-      if (Expediente.estaAberto()) {
-        this.expdata = this.storage.getItem('expediente_data');
-        this.horario_inicio = this.storage.getItem('expediente_horario_inicio');
-        Expediente.gps = this.storage.getItem('expediente_gps');
-        Expediente.accuracy = this.storage.getItem('expediente_accuracy');
-        return this.expdata;
+    GPSControle.prototype.mostraGPS = function() {
+      return $("#barrastatus p.gps").html(GPSControle.gps + "<br>(" + GPSControle.accuracy + " metros)");
+    };
+
+    GPSControle.prototype.load = function() {
+      if (GPSControle.estaAberto()) {
+        GPSControle.gps = this.storage.getItem('gps_data');
+        GPSControle.accuracy = this.storage.getItem('gps_accuracy');
+        GPSControle.time = this.storage.getItem('gps_time');
+        this.mostraGPS();
+        return true;
       } else {
         return null;
       }
     };
 
-    Expediente.prototype.save = function() {
-      this.storage.setItem('expediente_data', this.expdata);
-      this.storage.setItem('expediente_horario_inicio', this.horario_inicio);
-      this.storage.setItem('expediente_gps', Expediente.gps);
-      return this.storage.setItem('expediente_accuracy', Expediente.accuracy);
+    GPSControle.prototype.save = function() {
+      this.storage.setItem('gps_data', GPSControle.gps);
+      this.storage.setItem('gps_time', GPSControle.time);
+      return this.storage.setItem('gps_accuracy', GPSControle.accuracy);
     };
 
-    Expediente.prototype.finalizar = function() {
-      this.horario_fim = formatahora(new Date());
-      this.storage.setItem('expediente_horario_fim', this.horario_fim);
-      Atividade.armazena('expediente_data', this.usuario, Atividade.TIPO_EXPEDIENTE, 'Expediente', Expediente.gps, this.expdata, this.horario_inicio, this.horario_fim);
-      return $.mobile.changePage('#pglogado', {
-        changeHash: false
-      });
-    };
-
-    Expediente.prototype.iniciaWatch = function() {
+    GPSControle.prototype.iniciaWatch = function() {
       return this.watchid = navigator.geolocation.watchPosition((function(_this) {
         return function(position) {
           return _this.watchSucess(position);
@@ -308,15 +294,21 @@
       });
     };
 
-    Expediente.prototype.watchSucess = function(position) {
-      if (Expediente.accuracy > position.coords.accuracy) {
-        Expediente.gps = position.coords.latitude + ", " + position.coords.longitude;
-        Expediente.accuracy = position.coords.accuracy;
-        return console.log("latlong: " + Expediente.gps + " accuracy:" + position.coords.accuracy);
+    GPSControle.prototype.watchSucess = function(position) {
+      var timeout;
+      $("#barrastatus p.hora").html(formatahora(new Date()).slice(0, 5) + "h");
+      timeout = (new Date()).getTime() - GPSControle.time;
+      if ((timeout > 600000) || ((GPSControle.accuracy - position.coords.accuracy) > 2)) {
+        GPSControle.gps = position.coords.latitude + ", " + position.coords.longitude;
+        GPSControle.accuracy = position.coords.accuracy;
+        GPSControle.time = (new Date()).getTime();
+        console.log("latlong: " + GPSControle.gps + " accuracy:" + position.coords.accuracy);
+        this.mostraGPS();
+        return this.save();
       }
     };
 
-    Expediente.prototype.watchError = function(error) {
+    GPSControle.prototype.watchError = function(error) {
       if (error.code === error.PERMISSION_DENIED) {
         alert("Para que o sistema funcione por favor ative o GPS do seu telefone");
       }
@@ -328,74 +320,47 @@
       }
     };
 
-    return Expediente;
+    return GPSControle;
 
   })();
 
-  window.App = (function() {
-    function App() {
+  window.UserView = (function() {
+    function UserView() {
       this.submitLogin = __bind(this.submitLogin, this);
       this.storage = window.localStorage;
       this.usuario = this.getUsuario();
-      this.bindEvents();
+      $("#loginForm").on("submit", (function(_this) {
+        return function(e) {
+          return _this.submitLogin(e);
+        };
+      })(this));
     }
 
-    App.prototype.getUsuario = function() {
+    UserView.prototype.getUsuario = function() {
       this.usuario = this.storage.getItem('Usuario');
       return this.usuario;
     };
 
-    App.prototype.setUsuario = function(usuario) {
+    UserView.prototype.setUsuario = function(usuario) {
       this.usuario = usuario;
       return this.storage.setItem('Usuario', this.usuario);
     };
 
-    App.prototype.iniciarExpediente = function() {
-      this.expediente = new Expediente(this.usuario);
-      return $.mobile.changePage("#pgexpediente", {
+    UserView.prototype.clear = function() {
+      $("#username").val("");
+      return $("#password").val("");
+    };
+
+    UserView.prototype.trocarUsuario = function() {
+      this.storage.removeItem('Usuario');
+      this.usuario = null;
+      this.clear();
+      return $.mobile.changePage('#pglogin', {
         changeHash: false
       });
     };
 
-    App.prototype.iniciarAtividade = function() {
-      var identificacao;
-      identificacao = window.prompt('Informe a turma/identificação da atividade');
-      if (identificacao) {
-        this.atividade = new Atividade(Atividade.TIPO_AULA, identificacao);
-        return $.mobile.changePage('#pgatividade', {
-          changeHash: false
-        });
-      }
-    };
-
-    App.prototype.iniciarAlmoço = function() {
-      this.atividade = new Atividade(Atividade.TIPO_ALMOCO);
-      return $.mobile.changePage('#pgalmoco', {
-        changeHash: false
-      });
-    };
-
-    App.prototype.temAtividadesPendentes = function() {
-      return Atividade.estaAberta();
-    };
-
-    App.prototype.trocarUsuario = function() {
-      if (this.temAtividadesPendentes() === true) {
-        return alert("Por algum motivo desconhecido existem registros de atividades não finalizadas. Só é possivel trocar de usuário após finalizar todas as atividades.");
-      } else {
-        this.storage.removeItem('Usuario');
-        this.usuario = null;
-        return $.mobile.changePage('#pglogin', {
-          changeHash: false
-        });
-      }
-    };
-
-    App.prototype.bindEvents = function() {
-      return document.addEventListener('deviceready', this.onDeviceReady, false);
-    };
-
-    App.prototype.submitLogin = function(e) {
+    UserView.prototype.submitLogin = function(e) {
       var p, u, url;
       $("#submitButton").attr("disabled", "disabled");
       u = $("#username").val();
@@ -425,81 +390,14 @@
       return false;
     };
 
-    App.prototype.onDeviceReady = function() {
-      return app.main();
-    };
-
-    App.prototype.atualizaUI = function() {
-      var ativ, atividades, atividadesPendentes, html, li, _i, _len;
-      atividadesPendentes = Atividade.getAtividadesPendentes();
-      if (atividadesPendentes.length > 0) {
-        html = "Histórico de Atividades <span class='ui-li-count'>" + atividadesPendentes.length + "</span>";
-        $('#logativrecent').html(html);
-        $('#logulop').listview().listview('refresh');
-      }
-      atividades = window.localStorage.getObject('atividades');
-      if (atividades) {
-        html = "";
-        for (_i = 0, _len = atividades.length; _i < _len; _i++) {
-          ativ = atividades[_i];
-          li = "<li>";
-          if (ativ['pendente']) {
-            li += '<h2><a href="javascript:Atividade.envia()">' + ativ['id'] + '</a></h2>';
-          } else {
-            li += "<h2>" + ativ['id'] + "</h2>";
-          }
-          li += "<p> " + ativ['usuario'] + '@(' + ativ['gps'] + ")</p>";
-          li += "<p> " + ativ['data'] + '</p>';
-          li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
-          if (ativ['tipo'] === Atividade.TIPO_AULA) {
-            li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
-          }
-          html += li;
-        }
-        $('#ulhistorico').html(html);
-        return $('#ulhistorico').listview().listview('refresh');
-      }
-    };
-
-    App.prototype.mostraHistorico = function() {
-      this.atualizaUI();
-      return $.mobile.changePage("#pghistorico", {
-        changeHash: false
-      });
-    };
-
-    App.prototype.load = function(gps) {
+    UserView.prototype.load = function(gps) {
       if (this.usuario) {
-        this.atualizaUI();
-        if (Expediente.estaAberto()) {
-          this.expediente = new Expediente(this.usuario);
-          if (Atividade.estaAberta()) {
-            this.atividade = new Atividade();
-            if (this.atividade.tipo === Atividade.TIPO_ALMOCO) {
-              return $.mobile.changePage("#pgalmoco", {
-                changeHash: false
-              });
-            } else if (this.atividade.tipo === Atividade.TIPO_AULA) {
-              return $.mobile.changePage("#pgatividade", {
-                changeHash: false
-              });
-            } else if (this.atividade.tipo === Atividade.TIPO_EXPEDIENTE) {
-              return $.mobile.changePage("#pgexpediente", {
-                changeHash: false
-              });
-            } else {
-              return console.log('error: tipo desconhecido de atividade');
-            }
-          } else {
-            return $.mobile.changePage("#pgexpediente", {
-              changeHash: false
-            });
-          }
-        } else {
-          return $.mobile.changePage("#pglogado", {
-            changeHash: false
-          });
-        }
+        this.atividadesview = new Atividades();
+        this.atividadesview.atualizaUI();
+        window.atividadesview = this.atividadesview;
+        return $.mobile.changePage("#pglogado", {
+          changeHash: false
+        });
       } else {
         return $.mobile.changePage("#pglogin", {
           changeHash: false
@@ -507,8 +405,183 @@
       }
     };
 
+    return UserView;
+
+  })();
+
+  window.Atividades = (function() {
+    function Atividades() {}
+
+    Atividades.tolerancia = 5;
+
+    Atividades.prototype.getAtividades = function() {
+      return window.localStorage.getObject('lista_de_atividades');
+    };
+
+    Atividades.prototype.setAtividades = function(atividades) {
+      return window.localStorage.setObject('lista_de_atividades', atividades);
+    };
+
+    Atividades.prototype.fim = function(id) {
+      var ativ, ativs, horario_fim, i, n_participantes, n_presentes, _i, _len;
+      n_presentes = parseInt($('#txtpresentes' + id).val());
+      n_participantes = parseInt($('#txtparticipantes' + id).val());
+      if (isInteger(n_presentes) && isInteger(n_participantes)) {
+        if (n_presentes < n_participantes) {
+          alert("O número de pessoas presentes deve ser igual ou superior ou número de pessoas participantes da atividade!");
+          return;
+        }
+        horario_fim = formatahora(new Date());
+        ativs = this.getAtividades();
+        for (i = _i = 0, _len = ativs.length; _i < _len; i = ++_i) {
+          ativ = ativs[i];
+          if (parseInt(ativ.id) === parseInt(id)) {
+            if (ativ.h_inicio_registrado) {
+              ativ.h_fim_registrado = horario_fim;
+              ativ.gps = GPSControle.gps;
+              ativ.numero_de_presentes = n_presentes;
+              ativ.numero_de_participantes = n_participantes;
+              ativ.realizada = true;
+            } else {
+              alert("É preciso iniciar a atividade antes de finalizar!");
+            }
+          }
+        }
+        this.setAtividades(ativs);
+        return atividadesview.atualizaUI();
+      } else {
+        return alert("Para finalizar a atividade é preciso informar o número de participantes e presentes");
+      }
+    };
+
+    Atividades.prototype.start = function(id) {
+      var ativ, ativs, d, horario_inicio, i, limite_inicio, _i, _len;
+      ativs = this.getAtividades();
+      for (i = _i = 0, _len = ativs.length; _i < _len; i = ++_i) {
+        ativ = ativs[i];
+        if (parseInt(ativ.id) === parseInt(id)) {
+          horario_inicio = formatahora(new Date());
+          d = new Date();
+          d.setMinutes(d.getMinutes() + Atividades.tolerancia);
+          limite_inicio = formatahora(d);
+          if (limite_inicio > ativ.h_inicio) {
+            ativ['h_inicio_registrado'] = horario_inicio;
+            $('li.ativ' + id + ' button.ui-btn.start').hide();
+            $('li.ativ' + id + ' p.h_inicio_registrado').show();
+            $('li.ativ' + id + ' p.h_inicio_registrado').html('Iniciou as ' + horario_inicio.slice(0, 5) + 'h');
+          } else {
+            alert("Vc não pode iniciar esta atividade ainda!");
+          }
+        }
+      }
+      return this.setAtividades(ativs);
+    };
+
+    Atividades.prototype.atualizaOntem = function(ativ) {
+      var li;
+      li = "<li>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + " - " + ativ['gerencia'] + "</h2><div>";
+      li += "<p>Professor: " + ativ['usuario'] + "</p>";
+      li += "<span style='display:none' class='data'> " + ativ['data'] + '</span>';
+      if (ativ.realizada) {
+        li += "<p>Realizada de " + ativ['h_inicio_registrado'].slice(0, 5) + "h às " + ativ['h_fim_registrado'].slice(0, 5) + "h</p>";
+      } else {
+        li += "<p>De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+      }
+      if (ativ['tipo'] === Atividade.TIPO_AULA) {
+        li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
+      }
+      li += "<p>GPS: " + ativ['gps'] + "</p>";
+      return li + "</div></li>";
+    };
+
+    Atividades.prototype.atualizaHoje = function(ativ) {
+      var li;
+      li = "<li class='ativ" + ativ.id + "' data-role='collapsible' data-iconpos='right' data-inset='false'>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + ' - ' + ativ['gerencia'] + "</h2>";
+      li += "<span style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<p> Local: " + ativ['local'] + "</p>";
+      li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+      li += '<div data-role="fieldcontain"> <label for="txtpresentes' + ativ.id + '">Presentes:</label> <input name="txtpresentes' + ativ.id + '" class="numero" id="txtpresentes' + ativ.id + '" step="1"  value="' + ativ.numero_de_presentes + '" type="number"/> </div>';
+      li += '<div data-role="fieldcontain"> <label for="txtparticipantes' + ativ.id + '">Participantes:</label> <input name="txtparticipantes' + ativ.id + '" class="numero" id="txtparticipantes' + ativ.id + '" step="1"  value="' + ativ.numero_de_participantes + '" type="number"/> </div>';
+      li += '<div class="ui-grid-b"> <div class="ui-block-a">';
+      if (ativ.h_inicio_registrado) {
+        li += '<p class="h_inicio_registrado">Iniciou as ' + ativ.h_inicio_registrado.slice(0, 5) + 'h</p>';
+      } else {
+        li += '<button class="ui-btn start" onclick="atividadesview.start(' + ativ.id + ')">iniciar</button><p style="display:none" class="h_inicio_registrado"></p>';
+      }
+      li += '</div> <div class="ui-block-b"> </div> <div class="ui-block-c"> <button class="ui-btn" onclick="atividadesview.fim(' + ativ.id + ')">finalizar</button></div> </div>';
+      li += "</li>";
+      return li;
+    };
+
+    Atividades.prototype.atualizaAmanha = function(ativ) {
+      var li;
+      li = "<li >";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + " - " + ativ['gerencia'] + "</h2><div>";
+      li += "<p>Professor: " + ativ['usuario'] + "</p>";
+      li += "<span  style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<p>Local: " + ativ['local'] + "</p>";
+      li += "<p>De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+      return li + "</div></li>";
+    };
+
+    Atividades.prototype.atualizaUI = function() {
+      var ativ, atividades, hoje, htmlamanha, htmlhoje, htmlontem, _i, _len;
+      atividades = this.getAtividades();
+      hoje = str2datePT(formatadata(new Date()));
+      if (atividades) {
+        htmlhoje = "";
+        htmlontem = "";
+        htmlamanha = "";
+        for (_i = 0, _len = atividades.length; _i < _len; _i++) {
+          ativ = atividades[_i];
+          if ((str2datePT(ativ.data) < hoje) || (ativ.realizada === true)) {
+            htmlontem += this.atualizaOntem(ativ);
+          } else if (str2datePT(ativ.data) === hoje) {
+            htmlhoje += this.atualizaHoje(ativ);
+          } else {
+            htmlamanha += this.atualizaAmanha(ativ);
+          }
+        }
+        $('#ulhoje').html(htmlhoje);
+        $('#ulontem').html(htmlontem);
+        $('#ulamanha').html(htmlamanha);
+        $('#ulamanha,#ulontem').listview({
+          autodividers: true,
+          autodividersSelector: function(li) {
+            return $(li).find('.data').text();
+          }
+        }).listview('refresh');
+        $('#ulhoje').listview().listview('refresh');
+        $('div[data-role=collapsible]').collapsible();
+        $('li[data-role=collapsible]').collapsible();
+        $('input.numero').textinput();
+        return $('input.numero').textinput('refresh');
+      }
+    };
+
+    return Atividades;
+
+  })();
+
+  window.App = (function() {
+    function App() {
+      this.storage = window.localStorage;
+      this.userview = null;
+      this.bindEvents();
+    }
+
+    App.prototype.bindEvents = function() {
+      return document.addEventListener('deviceready', this.onDeviceReady, false);
+    };
+
+    App.prototype.onDeviceReady = function() {
+      return app.main();
+    };
+
     App.prototype.positionSucess = function(gps) {
-      return this.load(gps);
+      return this.userview.load();
     };
 
     App.prototype.positionError = function(error) {
@@ -517,16 +590,91 @@
 
     App.prototype.main = function() {
       console.log('Received Event: onDeviceReady');
-      this.load();
-      return $("#loginForm").on("submit", (function(_this) {
-        return function(e) {
-          return _this.submitLogin(e);
-        };
-      })(this));
+      window.userview = new UserView();
+      userview.load();
+      return window.gpscontrole = new GPSControle();
     };
 
     return App;
 
   })();
+
+  window.ativtest = [
+    {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "1",
+      usuario: "fabricia",
+      data: "20/10/2014",
+      h_inicio: "07:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA
+    }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "2",
+      usuario: "fabricia",
+      data: "20/10/2014",
+      h_inicio: "08:00",
+      h_fim: "08:30",
+      tipo: Atividade.TIPO_AULA
+    }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "3",
+      usuario: "fabricia",
+      data: "20/10/2014",
+      h_inicio: "09:00",
+      h_fim: "09:30",
+      tipo: Atividade.TIPO_AULA
+    }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "4",
+      usuario: "fabricia",
+      data: "22/10/2014",
+      h_inicio: "07:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA
+    }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "5",
+      usuario: "fabricia",
+      data: "22/10/2014",
+      h_inicio: "08:00",
+      h_fim: "08:30",
+      tipo: Atividade.TIPO_AULA
+    }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "6",
+      usuario: "fabricia",
+      data: "19/10/2014",
+      h_inicio: "09:00",
+      h_fim: "09:30",
+      tipo: Atividade.TIPO_AULA
+    }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "7",
+      usuario: "fabricia",
+      data: "21/10/2014",
+      h_inicio: "20:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA
+    }, {
+      gerencia: "RBC/ENE/JS",
+      local: "EDMA",
+      id: "8",
+      usuario: "fabricia",
+      data: "21/10/2014",
+      h_inicio: "21:00",
+      h_fim: "07:30",
+      tipo: Atividade.TIPO_AULA
+    }
+  ];
+
+  window.localStorage.setObject('lista_de_atividades', window.ativtest);
 
 }).call(this);

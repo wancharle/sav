@@ -11,6 +11,10 @@
     <script src="jquery/jquery-2.1.1.js"></script>
     <script src="jquery/jquery.mobile-1.4.3.min.js"></script>
     <title>SAV - Sistema de Acompanhamentos de Visitas</title>
+    <style>
+      #barrastatus p {text-align:center}
+      
+    </style>
   </head>
   <body>
     <div id="pgloading" data-role="page" data-theme="b">
@@ -37,126 +41,44 @@
         </form>
       </div>
       <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
+        <h4>&copy Transforma</h4>
       </div>
     </div>
     <div id="pglogado" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
+      <div id="painel" data-role="panel" data-position="right" data-display="overlay">
+        <h1>Menu</h1>
         <ul data-role="listview" data-inset="true" data-divider-theme="b">
-          <li><a href="javascript:app.iniciarExpediente()">Iniciar Expediente</a></li>
-        </ul><br>
-        <ul id="logulop" data-role="listview" data-inset="true" data-divider-theme="b">
-          <li data-role="list-divider" data-count-theme="b">Opções</li>
-          <li><a id="logativrecent" href="javascript:app.mostraHistorico()">Histórico de Atividades</a></li>
-          <li><a href="javascript:app.trocarUsuario();">Trocar de Usuario</a></li>
+          <li><a id="logativrecent" href="javascript:app.mostraHistorico()">Sincronizar Atividades</a></li>
+          <li><a href="javascript:userview.trocarUsuario();">Trocar de Usuario</a></li>
         </ul>
       </div>
-      <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
-      </div>
-    </div>
-    <div id="pgexpediente" data-role="page" data-theme="b">
       <div data-role="header">
-        <h1>SAV</h1>
+        <h1>SAV</h1><a href="#painel" data-transition="slidedown" data-icon="bars" class="ui-btn-right">Menu </a>
       </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Expediente </h3>
-        <p id="expuser" style="text-align:center">Vitor </p>
-        <p id="expdata" style="text-align:center">02/07/2014 às 09:02:39</p>
-        <p style="text-align:center">
-          <button onclick="app.iniciarAtividade()" class="ui-btn ui-btn-icon-right ui-icon-carat-r ui-corner-all">Iniciar Atividade</button>
-        </p>
-        <p style="text-align:center">
-          <button onclick="app.iniciarAlmoço()" class="ui-btn ui-btn-icon-right ui-icon-clock ui-corner-all">Iniciar Horário de Almoço</button>
-        </p>
-        <p style="text-align:center">
-          <button onclick="app.expediente.finalizar()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Expediente</button>
-        </p>
-      </div>
-      <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
-      </div>
-    </div>
-    <div id="pghistorico" data-role="page" data-theme="b">
-      <div data-role="header"><a href="#" onclick="$.mobile.changePage('#pglogado', {changeHash:false})" data-icon="back" class="ui-btn-left">voltar</a>
-        <h1>SAV</h1><a href="javascript:Atividade.envia()" data-icon="mail" class="ui-btn-right">enviar</a>
-      </div>
-      <div role="main" class="ui-content">
-        <ul id="ulhistorico" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-divider-theme="b"></ul>
+      <div id="tabs" data-role="tabs" data-inset="false">
+        <div data-role="navbar" data-inset="false">
+          <ul data-inset="false">
+            <li><a href="#tabhoje" data-ajax="false" class="ui-btn-active">Hoje</a></li>
+            <li><a href="#tabontem" data-ajax="false">Ontem</a></li>
+            <li><a href="#tabamanha" data-ajax="false">Amanhã</a></li>
+          </ul>
+        </div>
+        <div id="tabhoje" class="ui-content">               
+          <ul id="ulhoje" data-role="listview" data-inset="false" data-shadow="false"></ul>
+          <div id="barrastatus"><br>
+            <p class="hora"></p>
+            <p class="gps">-41.0023, -42.0012</p>
+          </div>
+        </div>
+        <div id="tabontem" class="ui-content">
+          <ul id="ulontem" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-shadow="false"></ul>
+        </div>
+        <div id="tabamanha" class="ui-content">
+          <ul id="ulamanha" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-shadow="false"></ul>
+        </div>
       </div>
       <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
-      </div>
-    </div>
-    <div id="pgalmoco" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Em horário de almoço </h3>
-        <p id="almouser" style="text-align:center">Vitor </p>
-        <p id="almodata" style="text-align:center">02/07/2014 às 09:02:39</p>
-        <p id="almogps" style="text-align:center">02/07/2014 às 09:02:39</p>
-        <p style="text-align:center">
-          <button onclick="$.mobile.changePage('#pgfimalmoco',{changeHash:false})" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Almoço</button>
-        </p>
-      </div>
-      <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
-      </div>
-    </div>
-    <div id="pgatividade" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Atividade </h3>
-        <p id="ativuser" style="text-align:center">Vitor </p>
-        <p id="ativid" style="text-align:center">id </p>
-        <p id="ativdata" style="text-align:center">02/07/2014 às 09:02:39</p>
-        <p id="ativgps" style="text-align:center">02/07/2014 às 09:02:39</p>
-        <p style="text-align:center">
-          <button onclick="$.mobile.changePage('#pgfimatividade',{changeHash:false})" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Finalizar Atividade</button>
-        </p>
-      </div>
-      <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
-      </div>
-    </div>
-    <div id="pgfimatividade" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Deseja Finalizar atividade?</h3>
-        <p style="text-align:center">
-          <input name="txtpresentes" id="txtpresentes" step="1" placeholder="nº de presentes" value="" type="number">
-        </p>
-        <p style="text-align:center">
-          <input name="txtparticipantes" id="txtparticipantes" step="1" placeholder="nº de participantes" value="" type="number">
-        </p>
-        <p style="text-align:center">
-          <button onclick="$.mobile.changePage('#pgatividade',{changeHash:false})" class="ui-btn ui-btn-inline ui-corner-all">Não</button>
-          <button onclick="app.atividade.finalizar()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Sim</button>
-        </p>
-      </div>
-    </div>
-    <div id="pgfimalmoco" data-role="page" data-theme="b">
-      <div data-role="header">
-        <h1>SAV</h1>
-      </div>
-      <div role="main" class="ui-content">
-        <h3 style="text-align:center">Deseja Finalizar o almoço?</h3>
-        <p style="text-align:center">
-          <button onclick="$.mobile.changePage('#pgalmoco',{changeHash:false})" class="ui-btn ui-btn-inline ui-corner-all">Não</button>
-          <button onclick="app.atividade.finalizarAlmoco()" class="ui-btn ui-btn-inline ui-btn-icon-right ui-icon-check ui-corner-all">Sim</button>
-        </p>
-      </div>
-      <div data-role="footer" data-position="fixed">
-        <h4>&copy WSQ Informática</h4>
+        <h4>&copy Transforma</h4>
       </div>
     </div>
     <script type="text/javascript" src="cordova.js"></script>

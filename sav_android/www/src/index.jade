@@ -11,7 +11,9 @@ html
         script(src="jquery/jquery-2.1.1.js")
         script(src="jquery/jquery.mobile-1.4.3.min.js")
         title SAV - Sistema de Acompanhamentos de Visitas
-        
+        style.
+
+            #barrastatus p {text-align:center}
         
     body
 
@@ -42,141 +44,51 @@ html
 
 
             div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
+                h4 &copy Transforma
                 
 
         div#pglogado(data-role="page", data-theme="b")
+            div#painel(data-role="panel",data-position="right", data-display="overlay")
+                h1 Menu
+                ul(data-role="listview",data-inset="true",data-divider-theme="b")
+                    li
+                       a#logativrecent(href="javascript:app.mostraHistorico()") Sincronizar Atividades
+                    li
+                       a(href="javascript:userview.trocarUsuario();") Trocar de Usuario
+
+
             div(data-role="header")
                 h1 SAV
+                a.ui-btn-right(href="#painel",data-transition="slidedown", data-icon="bars") Menu 
+             
+            div#tabs(data-role="tabs",data-inset="false")
+                    div(data-role="navbar",data-inset="false")
+                        ul(data-inset="false")
+                            li 
+                                a.ui-btn-active(href="#tabhoje",data-ajax="false") Hoje
+                            li
+                                a(href="#tabontem",data-ajax="false") Ontem
+                            li
+                                a(href="#tabamanha",data-ajax="false") Amanhã
 
-            div(role="main", class="ui-content")
-                ul(data-role="listview",data-inset="true",data-divider-theme="b")
-                    li 
-                       a(href="javascript:app.iniciarExpediente()") Iniciar Expediente
-                br 
-
-                ul#logulop(data-role="listview",data-inset="true",data-divider-theme="b")
-                    li(data-role="list-divider",data-count-theme='b') Opções
-                    li
-                       a#logativrecent(href="javascript:app.mostraHistorico()") Histórico de Atividades
-                    li
-                       a(href="javascript:app.trocarUsuario();") Trocar de Usuario
-
+                    div#tabhoje.ui-content                
+                        ul#ulhoje(data-role="listview", data-inset="false",data-shadow='false')
+                        div#barrastatus 
+                            br
+                            p.hora
+                            p.gps -41.0023, -42.0012
+                    div#tabontem.ui-content
+                        ul#ulontem(data-role="listview",data-filter="true",data-filter-placeholder='Buscar', data-inset="true",data-shadow='false')
+                    div#tabamanha.ui-content
+                        ul#ulamanha(data-role="listview",data-filter="true",data-filter-placeholder='Buscar', data-inset="true",data-shadow='false')
+              
             div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
+                h4 &copy Transforma
     
 
- 
-        div#pgexpediente(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
 
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Expediente 
-
-                p#expuser(style="text-align:center") Vitor 
-                p#expdata(style="text-align:center") 02/07/2014 às 09:02:39
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-icon-right.ui-icon-carat-r.ui-corner-all(onclick="app.iniciarAtividade()") Iniciar Atividade
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-icon-right.ui-icon-clock.ui-corner-all(onclick="app.iniciarAlmoço()") Iniciar Horário de Almoço
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.expediente.finalizar()") Finalizar Expediente
-
-
-            div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
-                
-        div#pghistorico(data-role="page", data-theme="b")
-            div(data-role="header")
-                a(href="#" onclick="$.mobile.changePage('#pglogado', {changeHash:false})",data-icon="back",class="ui-btn-left") voltar
-                h1 SAV
-                a(href="javascript:Atividade.envia()",data-icon="mail",class="ui-btn-right") enviar
-
-
-            div(role="main", class="ui-content")
-                ul#ulhistorico(data-role="listview",data-filter="true",data-filter-placeholder='Buscar' data-inset="true",data-divider-theme="b")
-
-            div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
-
-        div#pgalmoco(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
-
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Em horário de almoço 
-
-
-                p#almouser(style="text-align:center") Vitor 
-                p#almodata(style="text-align:center") 02/07/2014 às 09:02:39
-                p#almogps(style="text-align:center") 02/07/2014 às 09:02:39
-
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="$.mobile.changePage('#pgfimalmoco',{changeHash:false})") Finalizar Almoço
-
-
-            div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
-
-        div#pgatividade(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
-
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Atividade 
-
-
-                p#ativuser(style="text-align:center") Vitor 
-                p#ativid(style="text-align:center") id 
-                p#ativdata(style="text-align:center") 02/07/2014 às 09:02:39
-                p#ativgps(style="text-align:center") 02/07/2014 às 09:02:39
-
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="$.mobile.changePage('#pgfimatividade',{changeHash:false})") Finalizar Atividade
-
-
-            div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
-
-
-        div#pgfimatividade(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
-
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Deseja Finalizar atividade?
-
-                p(style="text-align:center") 
-                    input(name="txtpresentes",id="txtpresentes",step='1',placeholder="nº de presentes",value="",type="number")
-                p(style="text-align:center") 
-                    input(name="txtparticipantes",id="txtparticipantes",step='1',placeholder="nº de participantes",value="",type="number")
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-corner-all(onclick="$.mobile.changePage('#pgatividade',{changeHash:false})") Não
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.atividade.finalizar()") Sim
-
-        div#pgfimalmoco(data-role="page", data-theme="b")
-            div(data-role="header")
-                h1 SAV
-
-            div(role="main", class="ui-content")
-                h3(style="text-align:center") Deseja Finalizar o almoço?
-
-                p(style="text-align:center") 
-                    button.ui-btn.ui-btn-inline.ui-corner-all(onclick="$.mobile.changePage('#pgalmoco',{changeHash:false})") Não
-                    button.ui-btn.ui-btn-inline.ui-btn-icon-right.ui-icon-check.ui-corner-all(onclick="app.atividade.finalizarAlmoco()") Sim
-
-
-
-            div(data-role="footer", data-position="fixed")
-                h4 &copy WSQ Informática
-
-
+  
+   
 
 
         script(type="text/javascript", src="cordova.js")
