@@ -331,7 +331,8 @@ class window.UserView
   load: (gps) ->
     if @usuario 
       @atividadesview = new Atividades()
-      @atividadesview.atualizaUI()
+      @atividadesview.clearUI()
+      @atividadesview.sincronizar()
       window.atividadesview = @atividadesview
 
       $.mobile.changePage("#pglogado",{changeHash:false})                    
@@ -341,8 +342,28 @@ class window.UserView
 
 class window.Atividades
   @tolerancia = 5
+  
+  sincronizar: ()->
+        atividadesPendentes = @getAtividades() 
+        $.post( "http://sav.wancharle.com.br/salvar/", {'usuario':userview.getUsuario(),'json':JSON.stringify(atividadesPendentes)}, 
+            ()-> 
+                console.log('envio ok')
+            ,'json')
+        .done((data)->
+              atividadesview.setAtividades(data)
+              atividadesview.atualizaUI()
+
+        ).fail((error,textstatus)->
+            alert('Não foi possível enviar os dados registrados ao servidor. Isso ocorre provavelmente por falta de conexão de dados no momento. Tente novamente quando tver um conexão de internet estável')
+            console.log(textstatus)
+        )
+         
   getAtividades: ()->
-    return window.localStorage.getObject('lista_de_atividades')
+    ativs= window.localStorage.getObject('lista_de_atividades')
+    if ativs
+      return ativs
+    else
+      return new Array()
 
   setAtividades:(atividades)->
     window.localStorage.setObject('lista_de_atividades',atividades)
@@ -393,8 +414,8 @@ class window.Atividades
     @setAtividades(ativs) 
   atualizaOntem: (ativ) ->
     li = "<li>"
-    li+="<h2 data-inset='false'>"+ativ['h_inicio']+" - "+ativ['gerencia']+"</h2><div>"
-    li+="<p>Professor: "+ativ['usuario']+"</p>"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio'].slice(0,5)+"h - "+ativ['h_fim'].slice(0,5)+"h</h2><div>"
+    li+="<p> Gerência: "+ativ['gerencia']+ "</p>"
     li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
     if ativ.realizada
       li+="<p>Realizada de "+ativ['h_inicio_registrado'].slice(0,5)+"h às "+ativ['h_fim_registrado'].slice(0,5)+"h</p>"
@@ -404,12 +425,14 @@ class window.Atividades
         li+="<p> Participantes/Presentes: "+ ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>"
         
     li+="<p>GPS: " + ativ['gps']+ "</p>"
+    li+="<p>Professor: "+ativ['usuario']+"</p>"
     return li+"</div></li>"
 
   atualizaHoje: (ativ) ->
     li = "<li class='ativ"+ativ.id+"' data-role='collapsible' data-iconpos='right' data-inset='false'>"
-    li+="<h2 data-inset='false'>"+ativ['h_inicio']+' - '+ativ['gerencia']+"</h2>"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio'].slice(0,5)+'h - '+ativ['h_fim'].slice(0,5)+"h</h2>"
     li+="<span style='display:none' class='data'> "+ativ['data']+ '</span>'
+    li+="<p> Gerência: "+ativ['gerencia']+ "</p>"
     li+="<p> Local: "+ativ['local']+"</p>"
     li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
     li+='<div data-role="fieldcontain">
@@ -437,12 +460,12 @@ class window.Atividades
 
   atualizaAmanha: (ativ) ->
     li = "<li >"
-    li+="<h2 data-inset='false'>"+ativ['h_inicio']+" - "+ativ['gerencia']+"</h2><div>"
-    li+="<p>Professor: "+ativ['usuario']+ "</p>"
+    li+="<h2 data-inset='false'>"+ativ['h_inicio'].slice(0,5)+"h - "+ativ['h_fim'].slice(0,5)+"h</h2><div>"
+    li+="<p> Gerência: "+ativ['gerencia']+ "</p>"
     li+="<span  style='display:none' class='data'> "+ativ['data']+ '</span>'
     li+="<p>Local: "+ativ['local']+"</p>"
     li+="<p>De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
- 
+    li+="<p>Professor: "+ativ['usuario']+ "</p>"
     return li+"</div></li>"
 
   atualizaUI: ()->
@@ -478,6 +501,19 @@ class window.Atividades
           $('input.numero').textinput('refresh')
           #fimfix.
 
+  clearUI: ()->
+          htmlhoje = ""
+          htmlontem = ""
+          htmlamanha = ""
+          $('#ulhoje').html(htmlhoje)
+          $('#ulontem').html(htmlontem)
+          $('#ulamanha').html(htmlamanha)
+          $('#ulamanha,#ulontem').listview().listview('refresh')
+
+          $('#ulhoje').listview().listview('refresh')
+          
+
+
       
       
 
@@ -494,6 +530,9 @@ class window.App
     
     onDeviceReady: () ->
         app.main()
+
+    mostraHistorico: ()->
+      atividadesview.sincronizar()
                
     positionSucess: (gps) ->
         @userview.load()
@@ -519,4 +558,4 @@ window.ativtest = [
   {gerencia:"RBC/ENE/JS", local:"EDMA", id:"8", usuario:"fabricia", data:"21/10/2014", h_inicio: "21:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
   ]
 
-window.localStorage.setObject('lista_de_atividades',window.ativtest);
+#window.localStorage.setObject('lista_de_atividades',window.ativtest);

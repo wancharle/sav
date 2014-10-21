@@ -59,22 +59,22 @@
         <div data-role="navbar" data-inset="false">
           <ul data-inset="false">
             <li><a href="#tabhoje" data-ajax="false" class="ui-btn-active">Hoje</a></li>
-            <li><a href="#tabontem" data-ajax="false">Ontem</a></li>
-            <li><a href="#tabamanha" data-ajax="false">Amanhã</a></li>
+            <li><a href="#tabamanha" data-ajax="false">Agendadas</a></li>
+            <li><a href="#tabontem" data-ajax="false">Falta enviar</a></li>
           </ul>
         </div>
         <div id="tabhoje" class="ui-content">               
           <ul id="ulhoje" data-role="listview" data-inset="false" data-shadow="false"></ul>
           <div id="barrastatus"><br>
             <p class="hora"></p>
-            <p class="gps">-41.0023, -42.0012</p>
+            <p class="gps"></p>
           </div>
-        </div>
-        <div id="tabontem" class="ui-content">
-          <ul id="ulontem" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-shadow="false"></ul>
         </div>
         <div id="tabamanha" class="ui-content">
           <ul id="ulamanha" data-role="listview" data-filter="true" data-filter-placeholder="Buscar" data-inset="true" data-shadow="false"></ul>
+        </div>
+        <div id="tabontem" class="ui-content">
+          <ul id="ulontem" data-role="listview" data-filter="false" data-filter-placeholder="Buscar" data-inset="true" data-shadow="false"></ul><a href="javascript:app.mostraHistorico()" data-icon="bars" class="ui-btn">Sincronizar  </a>
         </div>
       </div>
       <div data-role="footer" data-position="fixed">

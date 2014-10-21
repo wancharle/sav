@@ -67,20 +67,23 @@ html
                             li 
                                 a.ui-btn-active(href="#tabhoje",data-ajax="false") Hoje
                             li
-                                a(href="#tabontem",data-ajax="false") Ontem
+                                a(href="#tabamanha",data-ajax="false") Agendadas
                             li
-                                a(href="#tabamanha",data-ajax="false") Amanhã
+                                a(href="#tabontem",data-ajax="false") Falta enviar
 
                     div#tabhoje.ui-content                
                         ul#ulhoje(data-role="listview", data-inset="false",data-shadow='false')
                         div#barrastatus 
                             br
                             p.hora
-                            p.gps -41.0023, -42.0012
-                    div#tabontem.ui-content
-                        ul#ulontem(data-role="listview",data-filter="true",data-filter-placeholder='Buscar', data-inset="true",data-shadow='false')
+                            p.gps 
                     div#tabamanha.ui-content
                         ul#ulamanha(data-role="listview",data-filter="true",data-filter-placeholder='Buscar', data-inset="true",data-shadow='false')
+
+                    div#tabontem.ui-content
+                        ul#ulontem(data-role="listview",data-filter="false",data-filter-placeholder='Buscar', data-inset="true",data-shadow='false')
+                        a.ui-btn(href="javascript:app.mostraHistorico()",data-icon="bars") Sincronizar  
+             
               
             div(data-role="footer", data-position="fixed")
                 h4 &copy Transforma

@@ -393,7 +393,8 @@
     UserView.prototype.load = function(gps) {
       if (this.usuario) {
         this.atividadesview = new Atividades();
-        this.atividadesview.atualizaUI();
+        this.atividadesview.clearUI();
+        this.atividadesview.sincronizar();
         window.atividadesview = this.atividadesview;
         return $.mobile.changePage("#pglogado", {
           changeHash: false
@@ -414,8 +415,31 @@
 
     Atividades.tolerancia = 5;
 
+    Atividades.prototype.sincronizar = function() {
+      var atividadesPendentes;
+      atividadesPendentes = this.getAtividades();
+      return $.post("http://sav.wancharle.com.br/salvar/", {
+        'usuario': userview.getUsuario(),
+        'json': JSON.stringify(atividadesPendentes)
+      }, function() {
+        return console.log('envio ok');
+      }, 'json').done(function(data) {
+        atividadesview.setAtividades(data);
+        return atividadesview.atualizaUI();
+      }).fail(function(error, textstatus) {
+        alert('Não foi possível enviar os dados registrados ao servidor. Isso ocorre provavelmente por falta de conexão de dados no momento. Tente novamente quando tver um conexão de internet estável');
+        return console.log(textstatus);
+      });
+    };
+
     Atividades.prototype.getAtividades = function() {
-      return window.localStorage.getObject('lista_de_atividades');
+      var ativs;
+      ativs = window.localStorage.getObject('lista_de_atividades');
+      if (ativs) {
+        return ativs;
+      } else {
+        return new Array();
+      }
     };
 
     Atividades.prototype.setAtividades = function(atividades) {
@@ -480,8 +504,8 @@
     Atividades.prototype.atualizaOntem = function(ativ) {
       var li;
       li = "<li>";
-      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + " - " + ativ['gerencia'] + "</h2><div>";
-      li += "<p>Professor: " + ativ['usuario'] + "</p>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'].slice(0, 5) + "h - " + ativ['h_fim'].slice(0, 5) + "h</h2><div>";
+      li += "<p> Gerência: " + ativ['gerencia'] + "</p>";
       li += "<span style='display:none' class='data'> " + ativ['data'] + '</span>';
       if (ativ.realizada) {
         li += "<p>Realizada de " + ativ['h_inicio_registrado'].slice(0, 5) + "h às " + ativ['h_fim_registrado'].slice(0, 5) + "h</p>";
@@ -492,14 +516,16 @@
         li += "<p> Participantes/Presentes: " + ativ['numero_de_participantes'] + "/" + ativ['numero_de_presentes'] + "</p>";
       }
       li += "<p>GPS: " + ativ['gps'] + "</p>";
+      li += "<p>Professor: " + ativ['usuario'] + "</p>";
       return li + "</div></li>";
     };
 
     Atividades.prototype.atualizaHoje = function(ativ) {
       var li;
       li = "<li class='ativ" + ativ.id + "' data-role='collapsible' data-iconpos='right' data-inset='false'>";
-      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + ' - ' + ativ['gerencia'] + "</h2>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'].slice(0, 5) + 'h - ' + ativ['h_fim'].slice(0, 5) + "h</h2>";
       li += "<span style='display:none' class='data'> " + ativ['data'] + '</span>';
+      li += "<p> Gerência: " + ativ['gerencia'] + "</p>";
       li += "<p> Local: " + ativ['local'] + "</p>";
       li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
       li += '<div data-role="fieldcontain"> <label for="txtpresentes' + ativ.id + '">Presentes:</label> <input name="txtpresentes' + ativ.id + '" class="numero" id="txtpresentes' + ativ.id + '" step="1"  value="' + ativ.numero_de_presentes + '" type="number"/> </div>';
@@ -518,11 +544,12 @@
     Atividades.prototype.atualizaAmanha = function(ativ) {
       var li;
       li = "<li >";
-      li += "<h2 data-inset='false'>" + ativ['h_inicio'] + " - " + ativ['gerencia'] + "</h2><div>";
-      li += "<p>Professor: " + ativ['usuario'] + "</p>";
+      li += "<h2 data-inset='false'>" + ativ['h_inicio'].slice(0, 5) + "h - " + ativ['h_fim'].slice(0, 5) + "h</h2><div>";
+      li += "<p> Gerência: " + ativ['gerencia'] + "</p>";
       li += "<span  style='display:none' class='data'> " + ativ['data'] + '</span>';
       li += "<p>Local: " + ativ['local'] + "</p>";
       li += "<p>De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
+      li += "<p>Professor: " + ativ['usuario'] + "</p>";
       return li + "</div></li>";
     };
 
@@ -561,6 +588,18 @@
       }
     };
 
+    Atividades.prototype.clearUI = function() {
+      var htmlamanha, htmlhoje, htmlontem;
+      htmlhoje = "";
+      htmlontem = "";
+      htmlamanha = "";
+      $('#ulhoje').html(htmlhoje);
+      $('#ulontem').html(htmlontem);
+      $('#ulamanha').html(htmlamanha);
+      $('#ulamanha,#ulontem').listview().listview('refresh');
+      return $('#ulhoje').listview().listview('refresh');
+    };
+
     return Atividades;
 
   })();
@@ -578,6 +617,10 @@
 
     App.prototype.onDeviceReady = function() {
       return app.main();
+    };
+
+    App.prototype.mostraHistorico = function() {
+      return atividadesview.sincronizar();
     };
 
     App.prototype.positionSucess = function(gps) {
@@ -674,7 +717,5 @@
       tipo: Atividade.TIPO_AULA
     }
   ];
-
-  window.localStorage.setObject('lista_de_atividades', window.ativtest);
 
 }).call(this);
