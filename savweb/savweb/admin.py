@@ -9,10 +9,10 @@ from .exporta_excel import export_xls
 class AtividadeAdmin(admin.ModelAdmin):
     date_hierarchy = 'data'
     search_fields = ('local','gerencia','numero_de_presentes', 'numero_de_participantes')
-    list_filter =  ( 'professor','numero_de_presentes')
-    list_display = ('local','gerencia','codigo_aula', 'instrutor', 'data','horario_inicio', 'horario_fim', 'gps', 'numero_de_presentes', 'numero_de_participantes')
+    list_filter =  ( 'professor','realizada')
+    list_display = ('local','gerencia','codigo_aula','data','horario_inicio', 'horario_fim', 'gps', 'numero_de_presentes', 'numero_de_participantes','instrutor','realizada')
     #exclude= ("gps", "horario_fim_registrado","horario_inicio_registrado", "numero_de_presentes","numero_de_participantes")
-    fields = ('professor',('tipo','codigo_aula'),'local', 'gerencia', 'data',('horario_inicio','horario_fim'))
+    fields = ('professor',('tipo','codigo_aula'),'local', 'gerencia', 'data',('horario_inicio','horario_fim'),'realizada')
     def instrutor(self,ob):
         return str(ob.professor)
     instrutor.short_description="professor"
