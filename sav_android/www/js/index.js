@@ -30,7 +30,7 @@
   };
 
   window.str2datePT = function(data) {
-    return Date.parse(data.slice(-4) + "-" + data.slice(3, 5) + "-" + data.slice(0, 2));
+    return new Date(parseInt(data.slice(-4)), parseInt(data.slice(3, 5)) - 1, parseInt(data.slice(0, 2))).getTime();
   };
 
   window.formatadata = function(data) {

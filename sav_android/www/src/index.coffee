@@ -21,7 +21,8 @@ Storage.prototype.getObject = (key) ->
         return value and JSON.parse(value)
 
 window.str2datePT = (data)->
-    return Date.parse(data.slice(-4)+"-"+data.slice(3,5)+"-"+data.slice(0,2))
+    #return Date.parse(data.slice(-4)+"-"+data.slice(3,5)+"-"+data.slice(0,2))
+    return new Date(parseInt(data.slice(-4)),parseInt(data.slice(3,5)) - 1,parseInt(data.slice(0,2))).getTime()
 
 window.formatadata = (data) ->
     return zeroPad(data.getDate(),2)+"/"+zeroPad(parseInt(data.getMonth())+1,2)+'/'+data.getFullYear()
@@ -470,7 +471,12 @@ class window.Atividades
 
   atualizaUI: ()->
       atividades = @getAtividades()
-      hoje = str2datePT(formatadata(new Date()))
+      #d=new Date()
+      #alert(d)
+      #alert(formatadata(d))
+
+      hoje = str2datePT(formatadata(new Date())) 
+      #alert(hoje)
       if atividades
           htmlhoje = ""
           htmlontem = ""
