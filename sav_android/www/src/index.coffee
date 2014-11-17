@@ -7,6 +7,11 @@ window.isInteger = (value)->
     intRegex = /^\d+$/
     return intRegex.test(value)
 
+window.getIntVazio = (value)->
+  if value
+      return parseInt(value)
+  else
+      return ""
 # fix para console.log em browsers antigos
 if (not window.console)
     window.console = {log: () ->  }
@@ -229,7 +234,7 @@ class window.GPSControle
         @mostraGPS()
        
     mostraGPS:()->
-        $("#barrastatus p.gps").html(GPSControle.gps+"<br>("+GPSControle.accuracy+" metros)")
+        $("#barrastatus p.gps").html(GPSControle.gps+"<br>("+parseInt(GPSControle.accuracy)+" metros)")
 
     load: ()-> 
         if GPSControle.estaAberto()
@@ -346,9 +351,11 @@ class window.Atividades
   
   sincronizar: ()->
         atividadesPendentes = @getAtividades() 
+
         $.post( "http://sav.wancharle.com.br/salvar/", {'usuario':userview.getUsuario(),'json':JSON.stringify(atividadesPendentes)}, 
             ()-> 
                 console.log('envio ok')
+                $( "#painel" ).panel( "close" )
             ,'json')
         .done((data)->
               atividadesview.setAtividades(data)
@@ -378,11 +385,20 @@ class window.Atividades
           return
 
       horario_fim = formatahora(new Date())
+      d = new Date()
+      d.setMinutes(d.getMinutes()-Atividades.tolerancia)
+      limite_fim = formatahora(d)
+
 
       ativs = @getAtividades()
       for ativ, i in ativs
         if parseInt(ativ.id) == parseInt(id)
           if ativ.h_inicio_registrado
+            if limite_fim > ativ.h_fim
+              alert("Periodo para finalizar esta atividade terminou.
+              Por isso, esta atividade NÃO será registrada.")
+              return false
+
             ativ.h_fim_registrado = horario_fim
             ativ.gps = GPSControle.gps
             ativ.numero_de_presentes = n_presentes
@@ -390,10 +406,12 @@ class window.Atividades
             ativ.realizada=true
           else
             alert("É preciso iniciar a atividade antes de finalizar!")
+            return false
       @setAtividades(ativs)
       atividadesview.atualizaUI()
     else
       alert("Para finalizar a atividade é preciso informar o número de participantes e presentes")
+      return false
 
 
   start:(id)->
@@ -436,14 +454,14 @@ class window.Atividades
     li+="<p> Gerência: "+ativ['gerencia']+ "</p>"
     li+="<p> Local: "+ativ['local']+"</p>"
     li+="<p> De "+ativ['h_inicio'].slice(0,5)+"h às "+ativ['h_fim'].slice(0,5)+"h</p>"
-    li+='<div data-role="fieldcontain">
-      <label for="txtpresentes'+ativ.id+'">Presentes:</label>
-      <input name="txtpresentes'+ativ.id+'" class="numero" id="txtpresentes'+ativ.id+'" step="1"  value="'+ativ.numero_de_presentes+'" type="number"/>
-      </div>'
-    li+='<div data-role="fieldcontain">
-      <label for="txtparticipantes'+ativ.id+'">Participantes:</label>
-      <input name="txtparticipantes'+ativ.id+'" class="numero" id="txtparticipantes'+ativ.id+'" step="1"  value="'+ativ.numero_de_participantes+'" type="number"/>
-      </div>'
+    li+="<div data-role=\"fieldcontain\">
+      <label for=\"txtpresentes#{ativ.id}\">Presentes:</label>
+      <input name=\"txtpresentes#{ativ.id}\" class=\"numero\" id=\"txtpresentes#{ativ.id}\" step=\"1\"  value=\"#{getIntVazio(ativ.numero_de_presentes)}\" type=\"number\"/>
+      </div>
+      <div data-role=\"fieldcontain\">
+      <label for=\"txtparticipantes#{ativ.id}\">Participantes:</label>
+      <input name=\"txtparticipantes#{ativ.id}\" class=\"numero\" id=\"txtparticipantes#{ativ.id}\" step=\"1\"  value=\"#{getIntVazio(ativ.numero_de_participantes)}\" type=\"number\"/>
+      </div>"
       
     li+='<div class="ui-grid-b">
     <div class="ui-block-a">'
@@ -554,9 +572,9 @@ class window.App
 
 
 window.ativtest = [
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"1", usuario:"fabricia", data:"20/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"2", usuario:"fabricia", data:"20/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA },
-  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"3", usuario:"fabricia", data:"20/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"1", usuario:"fabricia", data:"16/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"2", usuario:"fabricia", data:"16/11/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA },
+  {gerencia:"RBC/ENE/JS", local:"EDMA", id:"3", usuario:"fabricia", data:"16/11/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA },
   {gerencia:"RBC/ENE/JS", local:"EDMA", id:"4", usuario:"fabricia", data:"22/10/2014", h_inicio: "07:00", h_fim: "07:30", tipo: Atividade.TIPO_AULA },
   {gerencia:"RBC/ENE/JS", local:"EDMA", id:"5", usuario:"fabricia", data:"22/10/2014", h_inicio: "08:00", h_fim: "08:30", tipo: Atividade.TIPO_AULA },
   {gerencia:"RBC/ENE/JS", local:"EDMA", id:"6", usuario:"fabricia", data:"19/10/2014", h_inicio: "09:00", h_fim: "09:30", tipo: Atividade.TIPO_AULA },

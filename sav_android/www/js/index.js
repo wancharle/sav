@@ -13,6 +13,14 @@
     return intRegex.test(value);
   };
 
+  window.getIntVazio = function(value) {
+    if (value) {
+      return parseInt(value);
+    } else {
+      return "";
+    }
+  };
+
   if (!window.console) {
     window.console = {
       log: function() {}
@@ -258,7 +266,7 @@
     }
 
     GPSControle.prototype.mostraGPS = function() {
-      return $("#barrastatus p.gps").html(GPSControle.gps + "<br>(" + GPSControle.accuracy + " metros)");
+      return $("#barrastatus p.gps").html(GPSControle.gps + "<br>(" + parseInt(GPSControle.accuracy) + " metros)");
     };
 
     GPSControle.prototype.load = function() {
@@ -422,7 +430,8 @@
         'usuario': userview.getUsuario(),
         'json': JSON.stringify(atividadesPendentes)
       }, function() {
-        return console.log('envio ok');
+        console.log('envio ok');
+        return $("#painel").panel("close");
       }, 'json').done(function(data) {
         atividadesview.setAtividades(data);
         return atividadesview.atualizaUI();
@@ -447,7 +456,7 @@
     };
 
     Atividades.prototype.fim = function(id) {
-      var ativ, ativs, horario_fim, i, n_participantes, n_presentes, _i, _len;
+      var ativ, ativs, d, horario_fim, i, limite_fim, n_participantes, n_presentes, _i, _len;
       n_presentes = parseInt($('#txtpresentes' + id).val());
       n_participantes = parseInt($('#txtparticipantes' + id).val());
       if (isInteger(n_presentes) && isInteger(n_participantes)) {
@@ -456,11 +465,18 @@
           return;
         }
         horario_fim = formatahora(new Date());
+        d = new Date();
+        d.setMinutes(d.getMinutes() - Atividades.tolerancia);
+        limite_fim = formatahora(d);
         ativs = this.getAtividades();
         for (i = _i = 0, _len = ativs.length; _i < _len; i = ++_i) {
           ativ = ativs[i];
           if (parseInt(ativ.id) === parseInt(id)) {
             if (ativ.h_inicio_registrado) {
+              if (limite_fim > ativ.h_fim) {
+                alert("Periodo para finalizar esta atividade terminou. Por isso, esta atividade NÃO será registrada.");
+                return false;
+              }
               ativ.h_fim_registrado = horario_fim;
               ativ.gps = GPSControle.gps;
               ativ.numero_de_presentes = n_presentes;
@@ -468,13 +484,15 @@
               ativ.realizada = true;
             } else {
               alert("É preciso iniciar a atividade antes de finalizar!");
+              return false;
             }
           }
         }
         this.setAtividades(ativs);
         return atividadesview.atualizaUI();
       } else {
-        return alert("Para finalizar a atividade é preciso informar o número de participantes e presentes");
+        alert("Para finalizar a atividade é preciso informar o número de participantes e presentes");
+        return false;
       }
     };
 
@@ -528,8 +546,7 @@
       li += "<p> Gerência: " + ativ['gerencia'] + "</p>";
       li += "<p> Local: " + ativ['local'] + "</p>";
       li += "<p> De " + ativ['h_inicio'].slice(0, 5) + "h às " + ativ['h_fim'].slice(0, 5) + "h</p>";
-      li += '<div data-role="fieldcontain"> <label for="txtpresentes' + ativ.id + '">Presentes:</label> <input name="txtpresentes' + ativ.id + '" class="numero" id="txtpresentes' + ativ.id + '" step="1"  value="' + ativ.numero_de_presentes + '" type="number"/> </div>';
-      li += '<div data-role="fieldcontain"> <label for="txtparticipantes' + ativ.id + '">Participantes:</label> <input name="txtparticipantes' + ativ.id + '" class="numero" id="txtparticipantes' + ativ.id + '" step="1"  value="' + ativ.numero_de_participantes + '" type="number"/> </div>';
+      li += "<div data-role=\"fieldcontain\"> <label for=\"txtpresentes" + ativ.id + "\">Presentes:</label> <input name=\"txtpresentes" + ativ.id + "\" class=\"numero\" id=\"txtpresentes" + ativ.id + "\" step=\"1\"  value=\"" + (getIntVazio(ativ.numero_de_presentes)) + "\" type=\"number\"/> </div> <div data-role=\"fieldcontain\"> <label for=\"txtparticipantes" + ativ.id + "\">Participantes:</label> <input name=\"txtparticipantes" + ativ.id + "\" class=\"numero\" id=\"txtparticipantes" + ativ.id + "\" step=\"1\"  value=\"" + (getIntVazio(ativ.numero_de_participantes)) + "\" type=\"number\"/> </div>";
       li += '<div class="ui-grid-b"> <div class="ui-block-a">';
       if (ativ.h_inicio_registrado) {
         li += '<p class="h_inicio_registrado">Iniciou as ' + ativ.h_inicio_registrado.slice(0, 5) + 'h</p>';
@@ -648,7 +665,7 @@
       local: "EDMA",
       id: "1",
       usuario: "fabricia",
-      data: "20/10/2014",
+      data: "16/10/2014",
       h_inicio: "07:00",
       h_fim: "07:30",
       tipo: Atividade.TIPO_AULA
@@ -657,7 +674,7 @@
       local: "EDMA",
       id: "2",
       usuario: "fabricia",
-      data: "20/10/2014",
+      data: "16/11/2014",
       h_inicio: "08:00",
       h_fim: "08:30",
       tipo: Atividade.TIPO_AULA
@@ -666,7 +683,7 @@
       local: "EDMA",
       id: "3",
       usuario: "fabricia",
-      data: "20/10/2014",
+      data: "16/11/2014",
       h_inicio: "09:00",
       h_fim: "09:30",
       tipo: Atividade.TIPO_AULA

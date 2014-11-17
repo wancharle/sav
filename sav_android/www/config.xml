@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <widget id="br.com.wancharle.sav" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:gap="http://phonegap.com/ns/1.0">
-    <name>Sav</name>
+    <name>SAV - Controle de Ponto</name>
     <description>
-        Hello World sample application that responds to the deviceready event.
+        Aplicação do Sistema de Acompanhamento de Visitas(SAV) e controle de ponto dos funcionários da empresa Transforma. (http://transformaonline.com.br).
     </description>
-    <author email="support@phonegap.com" href="http://phonegap.com">
-        PhoneGap Team
+    <author email="contato@wancharle.com.br" href="http://wancharle.com.br">
+        Wancharle Sebastião Quirino
     </author>
     <preference name="permissions" value="none" />
     <preference name="phonegap-version" value="3.5.0" />
