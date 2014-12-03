@@ -14,7 +14,7 @@ def export_xls(modeladmin, request, queryset):
             return (name[0].verbose_name or name[0].name).upper()
         return fieldname.upper()
  
-    response = HttpResponse(mimetype='application/ms-excel')
+    response = HttpResponse(content_type='application/ms-excel')
     response['Content-Disposition'] = "attachment;filename=%s" % filename
  
     wbk = xlwt.Workbook()
@@ -38,7 +38,9 @@ def export_xls(modeladmin, request, queryset):
                 if fieldname.upper() == 'DATA':
                     sht.write(i + 1, j,row.data,date_format)
                 elif "hor" in fieldname:
-                    sht.write(i + 1, j, getattr(row, fieldname, ''),time_format)
+                    valor = getattr(row, fieldname, '')
+                    if valor:
+                        sht.write(i + 1, j, valor.strftime("%H:%M"))
                 else:
                     sht.write(i + 1, j, getattr(row, fieldname, ''))
  

@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 import xlrd,datetime
 
+from django.contrib import messages
 
 class Professor(models.Model):
     user = models.ForeignKey(User)
@@ -17,12 +18,12 @@ class Professor(models.Model):
 class Planilha(models.Model):
     observacao = models.CharField(max_length=200,null=True,blank=True)
     data = models.DateField(auto_now_add=True)
-    planilha_xls = models.FileField(upload_to="dados/",help_text=u"use apenas planilhas .xls. As .xlsx não são suportadas")
+    planilha_xls = models.FileField(upload_to="dados/")
 
     def __str__(self):
         return "{0}".format(self.observacao)
 
-    def importar(self):
+    def importar(self,request):
         workbook = xlrd.open_workbook(self.planilha_xls.path)
         worksheet = workbook.sheet_by_index(0)
         num_rows = worksheet.nrows - 1
@@ -40,16 +41,14 @@ class Planilha(models.Model):
                 userlogin = str(row[3].value).strip()
                 d['professor'] = Professor.objects.get(user__username=userlogin) 
                 d['data'] = datetime.datetime(*xlrd.xldate_as_tuple(row[4].value, workbook.datemode)) 
-                t = str(row[5].value).strip()
-                d['horario_inicio'] = datetime.datetime.strptime(t, '%H:%M')
                 t = str(row[6].value).strip()
+                d['horario_inicio'] = datetime.datetime.strptime(t, '%H:%M')
+                t = str(row[7].value).strip()
                 d['horario_fim'] = datetime.datetime.strptime(t, '%H:%M')
                     
-                ativ, created = Atividade.objects.update_or_create(codigo_aula=codigo_aula, defaults=d)
+                ativ, created = Atividade.objects.update_or_create(codigo_aula=codigo_aula,data=d['data'], defaults=d)
             except Exception as e :
-                erros+= "erro na linha {0}: {1}\n".format(curr_row,str(e))
-        print(rowa)
-    
+                 messages.add_message(request, messages.ERROR,"Erro na planilha linha {0}: {1}".format(curr_row+1,str(e)))
 
 class Atividade(models.Model):
     #TIPO_EXPEDIENTE = 'EX'
@@ -58,7 +57,7 @@ class Atividade(models.Model):
     TIPOS = ((TIPO_ALMOCO, u"Almoço"), (TIPO_AULA, u"Aula"))
 
     tipo  = models.CharField(max_length=2, default=TIPO_AULA,choices= TIPOS)
-    codigo_aula = models.IntegerField(unique=True, verbose_name=u"Código Aula")
+    codigo_aula = models.IntegerField(verbose_name=u"Código Aula")
     local = models.CharField(max_length=150)
     professor = models.ForeignKey(Professor)
     gerencia = models.CharField(max_length=100, verbose_name=u"gerência")
@@ -72,6 +71,9 @@ class Atividade(models.Model):
     horario_fim_registrado = models.TimeField(null=True,blank=True)
 
     gps = models.CharField(null=True, blank=True,max_length=30,help_text=u"Coordenadas do gps no formato <latitude, longitude>. Exemplo: -43.004579, 25.445676" )
+
+    class Meta:
+        unique_together = ('codigo_aula','data')
 
     def __str__(self):
         return "{0}".format(self.codigo_aula)
