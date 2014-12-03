@@ -1,3 +1,6 @@
 django
 django-localflavor
-xlwt
+#xlwt
+xlwt-future
+xlrd
+gunicorn

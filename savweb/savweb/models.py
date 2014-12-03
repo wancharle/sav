@@ -4,6 +4,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+import xlrd,datetime
+
 
 class Professor(models.Model):
     user = models.ForeignKey(User)
@@ -11,7 +13,44 @@ class Professor(models.Model):
 
     def __str__(self):
         return "{0}".format(self.user.username)
+ 
+class Planilha(models.Model):
+    observacao = models.CharField(max_length=200,null=True,blank=True)
+    data = models.DateField(auto_now_add=True)
+    planilha_xls = models.FileField(upload_to="dados/",help_text=u"use apenas planilhas .xls. As .xlsx não são suportadas")
+
+    def __str__(self):
+        return "{0}".format(self.observacao)
+
+    def importar(self):
+        workbook = xlrd.open_workbook(self.planilha_xls.path)
+        worksheet = workbook.sheet_by_index(0)
+        num_rows = worksheet.nrows - 1
+        curr_row = 0
+        erros = ""
+        while curr_row < num_rows:
+            curr_row += 1
+            row = worksheet.row(curr_row)
+            try:
+                
+                codigo_aula = int(row[0].value)
+                d = { }
+                d['local'] = str(row[1].value)
+                d['gerencia'] = str(row[2].value)
+                userlogin = str(row[3].value).strip()
+                d['professor'] = Professor.objects.get(user__username=userlogin) 
+                d['data'] = datetime.datetime(*xlrd.xldate_as_tuple(row[4].value, workbook.datemode)) 
+                t = str(row[5].value).strip()
+                d['horario_inicio'] = datetime.datetime.strptime(t, '%H:%M')
+                t = str(row[6].value).strip()
+                d['horario_fim'] = datetime.datetime.strptime(t, '%H:%M')
+                    
+                ativ, created = Atividade.objects.update_or_create(codigo_aula=codigo_aula, defaults=d)
+            except Exception as e :
+                erros+= "erro na linha {0}: {1}\n".format(curr_row,str(e))
+        print(rowa)
     
+
 class Atividade(models.Model):
     #TIPO_EXPEDIENTE = 'EX'
     TIPO_ALMOCO = 'AL'
@@ -19,7 +58,7 @@ class Atividade(models.Model):
     TIPOS = ((TIPO_ALMOCO, u"Almoço"), (TIPO_AULA, u"Aula"))
 
     tipo  = models.CharField(max_length=2, default=TIPO_AULA,choices= TIPOS)
-    codigo_aula = models.IntegerField(null=True,default=0,blank=True, verbose_name=u"Código Aula")
+    codigo_aula = models.IntegerField(unique=True, verbose_name=u"Código Aula")
     local = models.CharField(max_length=150)
     professor = models.ForeignKey(Professor)
     gerencia = models.CharField(max_length=100, verbose_name=u"gerência")
